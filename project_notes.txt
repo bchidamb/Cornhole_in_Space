@@ -1,0 +1,8 @@
+Notes, Thoughts, Questions, Etc.
+
+* Should make the grid see-through, or give the illusion that it is "solid ground"?
+- Need to figure wireframe implementation (?)
+
+* Find a nice background
+* Make the background move?
+* Make the background fade in and out?
