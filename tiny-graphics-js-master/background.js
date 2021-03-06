@@ -30,9 +30,9 @@ class FullGrid {
 		this.n_cols = n_cols;
 		this.materials = {
 			phong1: new Material(new defs.Phong_Shader(),
-			{color: color1,  ambient:1}),
+			{color: color1,  ambient: 0.3, diffusivity: 0.5, specularity: 1.0}),
 			phong2: new Material(new defs.Phong_Shader(),
-			{color: color2,  ambient:1}),
+			{color: color2,  ambient: 0.3, diffusivity: 0.0, specularity: 1.0}),
 		};
 	}
 
@@ -84,11 +84,8 @@ class Square_Outline extends Shape {
 // }
 
 
-export class GridDemo extends Scene {
-	/**
-	 *  **Base_scene** is a Scene that can be added to any display canvas.
-	 *  Setup the shapes, materials, camera, and lighting here.
-	 */
+export class Background extends Scene {
+
 	constructor() {
 			// constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
 			super();
@@ -106,7 +103,7 @@ export class GridDemo extends Scene {
 
 			this.materials = {
 					phong: new Material(new defs.Phong_Shader(),
-					{color: color(1, 1, 1, 1),  ambient:1}),
+					{color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
 					texture: new Material(new defs.Textured_Phong(),
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
@@ -140,29 +137,57 @@ export class GridDemo extends Scene {
 					program_state.set_camera(Mat4.look_at(vec3(0, 10, -5), vec3(0, 0, 25), vec3(0, 1, 0)));
 
 			}
+			////////////////////////////////////
+			//TODO: Parameters
+			////////////////////////////////////
+			let scale = 2;
+			let target_x = -3;
+			let target_z = 5; // >= 0
+			//real coordinates of the ball
+			let x = 10;
+			let y = 10;
+			let z = 10;
+			/////////////////////////////////////
+
 
 			program_state.projection_transform = Mat4.perspective(
 					Math.PI / 4, context.width / context.height, 1, 400);
 
-			const light_position = vec4(10, 10, 10, 1);
-			program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
 			let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
 			let model_transform = Mat4.identity();
 
+			//Note that each square is 2(scale) X 2(scale)
+			let target_color = color(0,0,1,1);
 
+			let base_target_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
+			let target_transformation = Mat4.translation(2*scale * target_x, 0, 2*scale * target_z).times(base_target_transformation);
 
+			//Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
 
+			//make light over the target
+			const light_position = vec4(2*scale * target_x, 5, target_z*(2*scale) + scale, 1);
+			const light_position1 = vec4(2*scale * target_x + scale*Math.cos(t), 10, target_z*(2*scale) + scale + scale*Math.sin(t), 1);
+			const light_position2 = vec4(2*scale * target_x - scale*Math.cos(t), 2.5, target_z*(2*scale) + scale - scale*Math.sin(t), 1);
+			program_state.lights = [new Light(light_position, target_color, 10**10),
+				new Light(light_position1, target_color, 10**10),
+				new Light(light_position2, target_color, 10**10)];
 
-			this.shapes.full.draw(context, program_state, Mat4.translation(0,0,-5).times(Mat4.scale(5,1,5)));
-			// this.shapes.grid.draw(context, program_state, model_transform, this.materials.phong);
-			// this.shapes.grid.draw(context, program_state, Mat4.rotation(Math.PI,0,1,0).times(Mat4.translation(+2,0,-58)), this.materials.phong.override({color : color(1,0,0,1)}));
-			// this.shapes.outline.draw(context, program_state, model_transform, this.materials.white); //TODO??
+			//draw ball
+			this.shapes.sphere.draw(context, program_state, Mat4.translation(x, y, z), this.materials.phong);
+
+			//The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
+			this.shapes.full.draw(context, program_state, Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
+
+			//draw target
+			this.shapes.square.draw(context, program_state, target_transformation, this.materials.phong.override({color: color(0,0,1,1)}));
+			// this.shapes.square.draw(context, program_state, target_transformation, this.materials.texture_2);
+
 
 			// Draw the stary sky
-			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 0.6+0.4*(Math.sin(t)**3)}));
-			this.shapes.box.draw(context, program_state, Mat4.rotation(t, 0,1,0), this.materials.texture_2);
+			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t)**4)})
+			);
 
 	}
 }
@@ -193,7 +218,6 @@ class Star_Texture extends defs.Textured_Phong {
 }
 
 class Texture_Scroll_X extends defs.Textured_Phong {
-	// TODO:  Modify the shader below (right now it's just the same fragment shader as Textured_Phong) for requirement #6.
 	fragment_glsl_code() {
 			return this.shared_glsl_code() + `
 					varying vec2 f_tex_coord;

@@ -29,7 +29,7 @@ import { Text_Demo }
 import { Transforms_Sandbox }
   from "./examples/transforms-sandbox.js"
 
-  import {GridDemo}
+  import {Background}
   from "./background.js"
 
 Object.assign( defs,
@@ -40,14 +40,14 @@ Object.assign( defs,
                      { Scene_To_Texture_Demo },
                      { Surfaces_Demo },
                      { Text_Demo },
-                     { GridDemo },
+                     { Background },
                      { Transforms_Sandbox } );
 
     // ******************** End extra step
 
 // (Can define Main_Scene's class here)
 
-const Main_Scene = GridDemo;
+const Main_Scene = Background;
 const Additional_Scenes = [];
 
 export { Main_Scene, Additional_Scenes, Canvas_Widget, Code_Widget, Text_Widget, defs }
