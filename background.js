@@ -108,7 +108,7 @@ export class Background extends Scene {
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
 					star_texture: new Material(new Texture_Scroll_X(),
-					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/rgb.jpg")}),
+					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
 					white: new Material(new defs.Basic_Shader()),
 
