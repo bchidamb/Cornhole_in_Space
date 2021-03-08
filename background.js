@@ -18,6 +18,15 @@ class Grid extends Shape {
 	}
 }
 
+class Arrow extends Shape {
+	constructor()
+	{
+		super("position", "normal", "texture_coord");
+		defs.Closed_Cone     .insert_transformed_copy_into( this, [ 4, 10, [[ .67, 1  ], [ 0,1 ]] ], Mat4.translation(   0,   0,  2 ).times( Mat4.scale( .25, .25, .25 ) ) );
+		defs.Cylindrical_Tube.insert_transformed_copy_into( this, [ 7, 7,  [[ .67, 1  ], [ 0,1 ]] ], Mat4.translation(   0,   0,  1 ).times( Mat4.scale(  .1,  .1,  2  ) ) );
+	}
+}
+
 
 //Use this not Grid!!!
 //Basically makes two seperate grids and allows the user to treat them as a single object (Note: This is not a real shape!!!)
@@ -92,12 +101,14 @@ export class Background extends Scene {
 
 			this.shapes = {
 					//declares a Grid of 25 rows and 30 columns (note: default square size is 2x2)
-					grid: new Grid(25,30),
+					// grid: new Grid(25,30),
 					square: new defs.Square(),
 					sphere: new defs.Subdivision_Sphere(5),
-					box: new defs.Cube(),
+					// box: new defs.Cube(),
 					full: new FullGrid(25, 40, color(1,1,1,1), color(0,0,0,1)),
-					square_outline: new Square_Outline()
+					// square_outline: new Square_Outline(),
+					arrow: new Arrow(),
+					axis: new defs.Axis_Arrows()
 					// outline: new Grid_Outline(25,30)
 			}
 
@@ -122,7 +133,6 @@ export class Background extends Scene {
 			//REMEMBER so that the sphere is moderately oriented
 			this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
 
-			this.shapes.box.arrays.texture_coord.forEach(p => p.scale_by(2));
 
 	}
 
@@ -134,7 +144,7 @@ export class Background extends Scene {
 					this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
 					// Define the global camera and projection matrices, which are stored in program_state.
 					//perspective
-					program_state.set_camera(Mat4.look_at(vec3(0, 10, -5), vec3(0, 0, 25), vec3(0, 1, 0)));
+					program_state.set_camera(Mat4.look_at(vec3(0, 10, -10), vec3(0, 0, 25), vec3(0, 1, 0)));
 
 			}
 			////////////////////////////////////
@@ -144,9 +154,13 @@ export class Background extends Scene {
 			let target_x = -3;
 			let target_z = 5; // >= 0
 			//real coordinates of the ball
-			let x = 10;
-			let y = 10;
-			let z = 10;
+			let x = 1;
+			let y = 1;
+			let z = 2;
+			//arrow coordinates
+			let arrow_x = 1;
+			let arrow_y = 1;
+			let arrow_z = 2;
 			/////////////////////////////////////
 
 
@@ -176,7 +190,6 @@ export class Background extends Scene {
 
 			//draw ball
 			this.shapes.sphere.draw(context, program_state, Mat4.translation(x, y, z), this.materials.phong);
-
 			//The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
 			this.shapes.full.draw(context, program_state, Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
 
@@ -189,6 +202,9 @@ export class Background extends Scene {
 			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t)**4)})
 			);
 
+			let arrow_scale = Math.sqrt(arrow_x**2 + arrow_y**2 + arrow_z**2);
+			this.shapes.arrow.draw(context, program_state, Mat4.scale(), this.materials.phong.override({color: color(1,0,0,1)}));
+			// this.shapes.axis.draw(context, program_state, Mat4.identity(), this.materials.phong.override({color: color(1,0,0,1)}))
 	}
 }
 
