@@ -5,40 +5,101 @@ const {
 } = tiny;
 
 class Grid extends Shape {
-	// This is a shape object. It takes in the number of rows and number of columns and produces a single set of the diagonals of a grid
+	// Produces a single set of diagonals based on rows and cols
 	constructor(rows, cols) {
 		super("position", "normal", "texture_coord");
 		for(let i=0; i < rows; i++)
-				for(let j=i%2; j < cols; j+=2)
-					defs.Square.insert_transformed_copy_into(this, [], Mat4.translation(2*i-rows,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)));
+			for(let j=i%2; j < cols; j+=2)
+				defs.Square.insert_transformed_copy_into(this, [], Mat4.translation(2*i-rows,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)));
 	}
 }
 
-// Use this not Grid!!!
-// Basically makes two seperate grids and allows the user to treat them as a single object 
+class Cube_Outline extends Shape {
+    constructor() {
+        super("position", "color");
+ 
+        this.arrays.position = Vector3.cast(
+            [-1, -1, -1], [1, -1, -1], 
+            [-1, -1, -1], [-1, 1, -1], 
+            [-1, -1, -1], [-1, -1, 1], 
+            [-1, -1, 1], [-1, 1, 1],
+            [-1, -1, 1], [1, -1, 1],
+            [-1, 1, -1], [1, 1, -1],
+            [-1, 1, -1], [-1, 1, 1],
+            [1, -1, -1], [1, 1, -1],
+            [1, -1, -1], [1, -1, 1],
+            [1, 1, 1], [-1, 1, 1],
+            [1, 1, 1], [1, -1, 1], 
+            [1, 1, 1], [1, 1, -1]
+        ); 
+
+        this.arrays.color = Vector3.cast(
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1],
+            [1,1,1,1], [1,1,1,1]
+        );
+        
+        this.indices = false;
+    }
+}
+
+class Grid_Outline extends Shape {
+	constructor(rows, cols) {
+		super("position", "normal", "texture_coord");
+		
+		/*
+		for (let i=0; i < rows; i++)
+			for(let j=i%2; j < cols; j+=2)
+				Cube_Outline.insert_transformed_copy_into(this, [], Mat4.translation(2*i-rows,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)));
+		*/
+	}
+}
+
+// Makes two seperate grids and allows the user to treat them as a single object 
 // Note: This is not a real shape!!!
 class FullGrid {
-	// Produces the full n_rows x n_cols grid
-	constructor(n_rows, n_cols, color1 = color(1,1,1,1), color2 = color(0,0,0,1)) {
+	// Produces the full n_rows x n_cols grid by creating two grids
+	constructor(n_rows, n_cols) {
 		this.grid = new Grid(n_rows, n_cols);
-		// this.n_rows = n_rows;
+		this.grid_outline = new Grid(n_rows, n_cols);
 		this.n_cols = n_cols;
 
 		this.materials = {
 			phong1: new Material(new defs.Phong_Shader(),
-			{color: color1,  ambient: 0.3, diffusivity: 0.5, specularity: 1.0}),
+					{color: color(1,1,1,1), ambient: 0.3, diffusivity: 0.5, specularity: 1.0}),
 			phong2: new Material(new defs.Phong_Shader(),
-			{color: color2,  ambient: 0.3, diffusivity: 0.0, specularity: 1.0}),
+					{color: color(0,0,0,1), ambient: 0.3, diffusivity: 0.5, specularity: 1.0}),
+			white: new Material(new defs.Basic_Shader()),
 		};
 	}
 
+	// Draws the outline of the grid
+	draw_outline(context, program_state, model_transform) {
+		// Draw one set of diagonals of thr grid
+		this.grid_outline.draw(context, program_state, model_transform, this.materials.white, 'LINES');
+
+		// Transform and draw the other set of diagonals of the grid
+		model_transform = model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(2,0,2*(-this.n_cols + 1)))
+		this.grid_outline.draw(context, program_state, model_transform, this.materials.white, 'LINES');
+	}
+
 	// Draw function: Similar to the draw function for shapes except that it has two optional materials
-	draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2)
-	{
-		// Draw one half of the grid
+	draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2) {
+		// Draw one set of diagonals of the grid
 		this.grid.draw(context, program_state, model_transform, material1);
 
-		// Transform the other half of the grid
+		// Transform and draw the other set of diagonals of the grid
 		model_transform = model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(2,0,2*(-this.n_cols + 1)))
 		this.grid.draw(context, program_state, model_transform, material2);
 	}
@@ -50,10 +111,9 @@ export class Background extends Scene {
 		super();
 
 		this.shapes = {
-			grid: new FullGrid(25, 40, color(1,1,1,1), color(0,0,0,1)),
+			grid: new FullGrid(25, 40),
 			square: new defs.Square(),
 			sphere: new defs.Subdivision_Sphere(5),
-			box: new defs.Cube(),
 			// square_outline: new Square_Outline()
 			// outline: new Grid_Outline(25,30)
 		}
@@ -69,8 +129,6 @@ export class Background extends Scene {
 			{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/rgb.jpg")}),
 			*/
 
-			white: new Material(new defs.Basic_Shader()),
-
 			/*
 			texture_2: new Material(new Texture_Scroll_X(), {
 				color:  color(0, 0, 0, 1),
@@ -83,7 +141,6 @@ export class Background extends Scene {
 
 		//REMEMBER so that the sphere is moderately oriented
 		this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
-		this.shapes.box.arrays.texture_coord.forEach(p => p.scale_by(2));
 
 	}
 
@@ -141,7 +198,10 @@ export class Background extends Scene {
 		let grid_transform = Mat4.identity().times(Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
 		this.shapes.grid.draw(context, program_state, grid_transform);
 
-		// Draw the stary sky
+		// DOES NOT WORK
+		// this.shapes.grid.draw_outline(context, program_state, grid_transform);
+
+		// Draw the starry sky
 		let boundary_transform = Mat4.identity().times(Mat4.scale(200,200,200)).times(Mat4.rotation(t/25, 0,1,0.25));
 		this.shapes.sphere.draw(context, program_state, boundary_transform, this.materials.star_texture.override({ambient : 1-0.5*(Math.sin(t)**4)}));
 
@@ -158,7 +218,6 @@ export class Background extends Scene {
 	}
 }
 
-/*
 //For some reason, these aren't working for me (although they seem to in Project 2)
 class Star_Texture extends defs.Textured_Phong {
 	fragment_glsl_code() {
@@ -206,7 +265,6 @@ class Texture_Scroll_X extends defs.Textured_Phong {
 			} `;
 	}
 }
-*/
 
 //TODO: This is not currently functional
 // class Grid_Outline extends Shape {
