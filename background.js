@@ -154,13 +154,13 @@ export class Background extends Scene {
 			let target_x = -3;
 			let target_z = 5; // >= 0
 			//real coordinates of the ball
-			let x = 1;
-			let y = 1;
-			let z = 2;
-			//arrow coordinates
-			let arrow_x = 1;
+			let x = 4;
+			let y = 4;
+			let z = 4;
+			//arrow coordinates (where the head is)
+			let arrow_x = 2;
 			let arrow_y = 1;
-			let arrow_z = 2;
+			let arrow_z = 1;
 			/////////////////////////////////////
 
 
@@ -202,8 +202,13 @@ export class Background extends Scene {
 			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t)**4)})
 			);
 
+			//TODO: This is still not fully working
 			let arrow_scale = Math.sqrt(arrow_x**2 + arrow_y**2 + arrow_z**2);
-			this.shapes.arrow.draw(context, program_state, Mat4.scale(1,1,arrow_scale), this.materials.phong.override({color: color(1,0,0,1)}));
+			let arrow_transformation = Mat4.rotation(Math.asin(arrow_y / arrow_scale),0,0,1);
+			arrow_transformation = arrow_transformation.times(Mat4.rotation(Math.asin(arrow_x / Math.sqrt(arrow_x**2 + arrow_z**2)),0,1,0));
+			arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,arrow_scale/2));
+
+			this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
 			// this.shapes.axis.draw(context, program_state, Mat4.identity(), this.materials.phong.override({color: color(1,0,0,1)}))
 	}
 }
