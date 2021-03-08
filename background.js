@@ -115,7 +115,7 @@ export class Background extends Scene {
 					texture_2: new Material(new Texture_Scroll_X(), {
 						color:  color(0, 0, 0, 1),
 						ambient: 1.0, diffusivity: 0.1, specularity: 0.1,
-						texture: new Texture("./assets/rgb.jpg", "LINEAR_MIPMAP_LINEAR")
+						texture: new Texture("./assets/stars.jpg", "LINEAR_MIPMAP_LINEAR")
 				})
 
 			}
