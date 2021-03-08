@@ -203,7 +203,7 @@ export class Background extends Scene {
 			);
 
 			let arrow_scale = Math.sqrt(arrow_x**2 + arrow_y**2 + arrow_z**2);
-			this.shapes.arrow.draw(context, program_state, Mat4.scale(), this.materials.phong.override({color: color(1,0,0,1)}));
+			this.shapes.arrow.draw(context, program_state, Mat4.scale(1,1,arrow_scale), this.materials.phong.override({color: color(1,0,0,1)}));
 			// this.shapes.axis.draw(context, program_state, Mat4.identity(), this.materials.phong.override({color: color(1,0,0,1)}))
 	}
 }
