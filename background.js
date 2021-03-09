@@ -55,28 +55,28 @@ class FullGrid {
 }
 
 
-class Square_Outline extends Shape {
-	constructor(rows, cols, x_scale, z_scale) {
-			super("position", "color");
-			this.arrays.position = Vector3.cast(
-					// [1, 1, 0],
-					// [-1, 1, 0],
-					// [1, -1, 0],
-					// [-1, -1, 0]
-					[1, 1, 0], [-1, 1, 0],
-					[1, 1, 0], [1, -1, 0],
-					[-1, -1, 0], [-1, 1, 0],
-					[-1, -1, 0], [1, -1, 0]
-			);
-			const white_color = color(1,1,1,1);
-			this.arrays.color = [
-			white_color, white_color,
-			white_color, white_color
-			];
-			this.indices.push(0,1,2,3,4,5,6,7);
-			// this.indices.push(0, 1, 0, 2, 1, 3, 2, 3);
-	}
-}
+// class Square_Outline extends Shape {
+// 	constructor(rows, cols, x_scale, z_scale) {
+// 			super("position", "color");
+// 			this.arrays.position = Vector3.cast(
+// 					// [1, 1, 0],
+// 					// [-1, 1, 0],
+// 					// [1, -1, 0],
+// 					// [-1, -1, 0]
+// 					[1, 1, 0], [-1, 1, 0],
+// 					[1, 1, 0], [1, -1, 0],
+// 					[-1, -1, 0], [-1, 1, 0],
+// 					[-1, -1, 0], [1, -1, 0]
+// 			);
+// 			const white_color = color(1,1,1,1);
+// 			this.arrays.color = [
+// 			white_color, white_color,
+// 			white_color, white_color
+// 			];
+// 			this.indices.push(0,1,2,3,4,5,6,7);
+// 			// this.indices.push(0, 1, 0, 2, 1, 3, 2, 3);
+// 	}
+// }
 
 //TODO: This is not currently functional
 // class Grid_Outline extends Shape {
@@ -108,6 +108,7 @@ export class Background extends Scene {
 					full: new FullGrid(25, 40, color(1,1,1,1), color(0,0,0,1)),
 					// square_outline: new Square_Outline(),
 					arrow: new Arrow(),
+					circle: new defs.Regular_2D_Polygon(25,25),
 					axis: new defs.Axis_Arrows()
 					// outline: new Grid_Outline(25,30)
 			}
@@ -115,19 +116,15 @@ export class Background extends Scene {
 			this.materials = {
 					phong: new Material(new defs.Phong_Shader(),
 					{color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
+
 					texture: new Material(new defs.Textured_Phong(),
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
-					star_texture: new Material(new Texture_Scroll_X(),
+					star_texture: new Material(new Star_Texture(),
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
-					white: new Material(new defs.Basic_Shader()),
-
-					texture_2: new Material(new Texture_Scroll_X(), {
-						color:  color(0, 0, 0, 1),
-						ambient: 1.0, diffusivity: 0.1, specularity: 0.1,
-						texture: new Texture("./assets/stars.jpg", "LINEAR_MIPMAP_LINEAR")
-				})
+					// white: new Material(new defs.Basic_Shader()),
+					ring: new Material(new Ring_Shader()),
 
 			}
 			//REMEMBER so that the sphere is moderately oriented
@@ -158,9 +155,9 @@ export class Background extends Scene {
 			let y = 4;
 			let z = 4;
 			//arrow coordinates (where the head is)
-			let arrow_xz_angle = 0;
+			let arrow_xz_angle = -Math.PI/4;
 			let arrow_y_angle = Math.PI/4;
-			let arrow_mag = 1; //magnitude
+			let arrow_mag = 8; //magnitude
 			/////////////////////////////////////
 
 
@@ -197,10 +194,12 @@ export class Background extends Scene {
 			this.shapes.square.draw(context, program_state, target_transformation, this.materials.phong.override({color: color(0,0,1,1)}));
 			// this.shapes.square.draw(context, program_state, target_transformation, this.materials.texture_2);
 
+			this.shapes.circle.draw(context, program_state, Mat4.scale(1,2.0,1).times(target_transformation.times(Mat4.scale(1,1,1))), this.materials.ring);
+
 
 			// Draw the stary sky
-			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t)**4)})
-			);
+			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t)**4)}));
+			// this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.star_texture);
 
 			//TODO: This is still not fully working
 			let arrow_transformation = Mat4.identity();
@@ -217,7 +216,66 @@ export class Background extends Scene {
 	}
 }
 
-//For some reason, these aren't working for me (although they seem to in Project 2)
+class Ring_Shader extends Shader {
+
+	update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
+			// update_GPU():  Defining how to synchronize our JavaScript's variables to the GPU's:
+      context.uniform1f(gpu_addresses.animation_time, graphics_state.animation_time / 1000);
+			const [P, C, M] = [graphics_state.projection_transform, graphics_state.camera_inverse, model_transform],
+					PCM = P.times(C).times(M);
+			context.uniformMatrix4fv(gpu_addresses.projection_camera_model_transform, false,
+					Matrix.flatten_2D_to_1D(PCM.transposed()));
+	}
+
+	shared_glsl_code() {
+			// ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
+			return `
+			precision mediump float;
+			varying vec4 point_position;
+			varying vec4 center;
+			uniform float animation_time;
+			`;
+	}
+
+	vertex_glsl_code() {
+			// ********* VERTEX SHADER *********
+			// TODO:  Complete the main function of the vertex shader (Extra Credit Part II).
+			return this.shared_glsl_code() + `
+			attribute vec3 position;
+			uniform mat4 model_transform;
+			uniform mat4 projection_camera_model_transform;
+
+			void main(){
+					gl_Position = projection_camera_model_transform * vec4( position, 1.0 );
+					point_position = vec4( position, 1.0 );
+					center = vec4( 0.0, 0.0, 0.0, 1.0 );
+			}`;
+	}
+
+	fragment_glsl_code() {
+			// ********* FRAGMENT SHADER *********
+			// TODO:  Complete the main function of the fragment shader (Extra Credit Part II).
+			return this.shared_glsl_code() + `
+			void main(){
+				float mod_animation_time = animation_time - float(int(animation_time)/4 * 4); //should get animation_time % 4
+				float distance = distance(point_position, center);
+				float temp = (sin(distance*6.0*3.14159265359) + 1.0) / 2.0;
+				float val = abs(temp - mod_animation_time/4.0);
+				// gl_FragColor = vec4(val, val, val, 0.75*val);
+				if (val  <  0.3)
+				{
+					gl_FragColor = vec4(0.0,1.0,0.0,1.0);
+				}
+				else
+				{
+					gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+				}
+			}`;
+	}
+}
+
+
+
 class Star_Texture extends defs.Textured_Phong {
 	fragment_glsl_code() {
 			return this.shared_glsl_code() + `
@@ -227,40 +285,20 @@ class Star_Texture extends defs.Textured_Phong {
 
 					void main(){
 
-							float mod_animation_time = 2.*animation_time - float(int(animation_time)/16 * 16); //should get animation_time % 16
+							float mod_animation_time = 0.25*animation_time - float(int(0.25*animation_time)/16 * 16); //should get animation_time % 16
 
 							vec2 new_coord = vec2(f_tex_coord.x + 2.0*mod_animation_time, f_tex_coord.y);
 							// Sample the texture image in the correct place:
 							vec4 tex_color = texture2D( texture, new_coord);
 							if( tex_color.w < .01 ) discard;
 
+							float angle_time = mod_animation_time / 8.0 * 3.14159265359;
+							float new_ambient = ambient * (1.0-0.5*(sin(angle_time)*sin(angle_time)*sin(angle_time)*sin(angle_time)));
 							// Compute an initial (ambient) color:
-							gl_FragColor = vec4( ( tex_color.xyz ) * ambient, shape_color.w * tex_color.w );
+							gl_FragColor = vec4( ( tex_color.xyz ) * new_ambient, shape_color.w * tex_color.w );
 																																			 // Compute the final color with contributions from lights:
 							gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
 			} `;
 	}
 }
 
-class Texture_Scroll_X extends defs.Textured_Phong {
-	fragment_glsl_code() {
-			return this.shared_glsl_code() + `
-					varying vec2 f_tex_coord;
-					uniform sampler2D texture;
-					uniform float animation_time;
-
-					void main(){
-
-							float mod_animation_time = animation_time - float(int(animation_time)/16 * 16); //should get animation_time % 16
-
-							vec2 new_coord = vec2(f_tex_coord.x - 2.0*mod_animation_time, f_tex_coord.y);
-							// Sample the texture image in the correct place:
-							vec4 tex_color = texture2D( texture, new_coord);
-							if( tex_color.w < .01 ) discard;
-																																			 // Compute an initial (ambient) color:
-							gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w );
-																																			 // Compute the final color with contributions from lights:
-							gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
-			} `;
-	}
-}
