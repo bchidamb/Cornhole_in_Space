@@ -67,7 +67,7 @@ export class Background extends Scene {
 					sphere: new defs.Subdivision_Sphere(5),
 
 					//NOTE: we are assuming that there are an ODD number of columns
-					full: new FullGrid(50, 51, color(1,1,1,1), color(0,0,0,1)),
+					full: new FullGrid(50, 81, color(1,1,1,1), color(0,0,0,1)),
 					arrow: new Arrow(),
 					circle: new defs.Regular_2D_Polygon(25,25),
 					// axis: new defs.Axis_Arrows()
@@ -80,8 +80,8 @@ export class Background extends Scene {
 					texture: new Material(new defs.Textured_Phong(),
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
-					star_texture: new Material(new Star_Texture(),
-					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
+					// star_texture: new Material(new Star_Texture(),
+					// {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
 					ring: new Material(new Ring_Shader()),
 
