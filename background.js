@@ -8,11 +8,11 @@ class Grid extends Shape {
 	//This is a shape object. It takes in the number of rows and number of columns and produces a single set of the diagonals of a grid
 	constructor(rows, cols) {
 		super("position", "normal", "texture_coord");
-		for(let i=0; i < rows; i++)
+		for(let i=0; i < cols; i++)
 		{
-				for(let j=i%2; j < cols; j+=2)
+				for(let j=i%2; j < rows; j+=2)
 				{
-					defs.Square.insert_transformed_copy_into(this, [], Mat4.translation(2*i-rows,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)));
+					defs.Square.insert_transformed_copy_into(this, [], Mat4.translation(2*i-cols,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)));
 				}
 		}
 	}
@@ -36,7 +36,7 @@ class FullGrid {
 		// constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
 		this.grid = new Grid(n_rows, n_cols);
 		// this.n_rows = n_rows;
-		this.n_cols = n_cols;
+		this.rows = n_rows;
 		this.materials = {
 			phong1: new Material(new defs.Phong_Shader(),
 			{color: color1,  ambient: 0.3, diffusivity: 0.5, specularity: 1.0}),
@@ -49,48 +49,10 @@ class FullGrid {
 	draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2)
 	{
 		this.grid.draw(context, program_state, model_transform, material1);
-		this.grid.draw(context, program_state, model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(+2,0,2*(-this.n_cols + 1))), material2);
+		this.grid.draw(context, program_state, model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(+2,0,2*(-this.rows + 1))), material2);
 	}
 
 }
-
-
-// class Square_Outline extends Shape {
-// 	constructor(rows, cols, x_scale, z_scale) {
-// 			super("position", "color");
-// 			this.arrays.position = Vector3.cast(
-// 					// [1, 1, 0],
-// 					// [-1, 1, 0],
-// 					// [1, -1, 0],
-// 					// [-1, -1, 0]
-// 					[1, 1, 0], [-1, 1, 0],
-// 					[1, 1, 0], [1, -1, 0],
-// 					[-1, -1, 0], [-1, 1, 0],
-// 					[-1, -1, 0], [1, -1, 0]
-// 			);
-// 			const white_color = color(1,1,1,1);
-// 			this.arrays.color = [
-// 			white_color, white_color,
-// 			white_color, white_color
-// 			];
-// 			this.indices.push(0,1,2,3,4,5,6,7);
-// 			// this.indices.push(0, 1, 0, 2, 1, 3, 2, 3);
-// 	}
-// }
-
-//TODO: This is not currently functional
-// class Grid_Outline extends Shape {
-// 	constructor(rows, cols, x_scale = 1, z_scale = 1) {
-// 		super("position", "normal", "texture_coord");
-// 		for(let i=0; i < rows; i++)
-// 		{
-// 				for(let j=0; j < cols; j++)
-// 				{
-// 					Square_Outline.insert_transformed_copy_into(this, [], Mat4.translation(2*i-rows,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)).times(Mat4.scale(x_scale,1,z_scale)));
-// 				}
-// 		}
-// 	}
-// }
 
 
 export class Background extends Scene {
@@ -101,16 +63,14 @@ export class Background extends Scene {
 
 			this.shapes = {
 					//declares a Grid of 25 rows and 30 columns (note: default square size is 2x2)
-					// grid: new Grid(25,30),
 					square: new defs.Square(),
 					sphere: new defs.Subdivision_Sphere(5),
-					// box: new defs.Cube(),
-					full: new FullGrid(25, 40, color(1,1,1,1), color(0,0,0,1)),
-					// square_outline: new Square_Outline(),
+
+					//NOTE: we are assuming that there are an ODD number of columns
+					full: new FullGrid(50, 51, color(1,1,1,1), color(0,0,0,1)),
 					arrow: new Arrow(),
 					circle: new defs.Regular_2D_Polygon(25,25),
-					axis: new defs.Axis_Arrows()
-					// outline: new Grid_Outline(25,30)
+					// axis: new defs.Axis_Arrows()
 			}
 
 			this.materials = {
@@ -123,7 +83,6 @@ export class Background extends Scene {
 					star_texture: new Material(new Star_Texture(),
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
-					// white: new Material(new defs.Basic_Shader()),
 					ring: new Material(new Ring_Shader()),
 
 			}
@@ -141,16 +100,17 @@ export class Background extends Scene {
 					this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
 					// Define the global camera and projection matrices, which are stored in program_state.
 					//perspective
-					program_state.set_camera(Mat4.look_at(vec3(0, 20, -18), vec3(0, 0, 24), vec3(0, 1, 0)));
+					program_state.set_camera(Mat4.look_at(vec3(0, 22, -20), vec3(0, 0, 30), vec3(0, 1, 0)));
 
 			}
 			////////////////////////////////////
 			//TODO: Parameters
 			////////////////////////////////////
-			let scale = 2;
+			let scale = 2.5;
 			//in units of the squares on the grid (a square is 2*scale x 2*scale)
-			let target_x = 0; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
-			let target_z = 5; // >= 0
+			//Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
+			let target_x = 1; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
+			let target_z = 7; // >= 0
 			//real coordinates of the ball
 			let x = 0;
 			let y = 0;
@@ -174,14 +134,14 @@ export class Background extends Scene {
 			let target_color = color(0,0,1,1);
 
 			let base_target_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
+			//move the target to the correct position
 			let target_transformation = Mat4.translation(2*scale * target_x, 0, 2*scale * target_z).times(base_target_transformation);
 
-			//Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
 
 			//make light over the target
 			const light_position = vec4(2*scale * target_x, 5, target_z*(2*scale) + scale, 1);
-			const light_position1 = vec4(2*scale * target_x + scale*Math.cos(t), 10, target_z*(2*scale) + scale + scale*Math.sin(t), 1);
-			const light_position2 = vec4(2*scale * target_x - scale*Math.cos(t), 2.5, target_z*(2*scale) + scale - scale*Math.sin(t), 1);
+			const light_position1 = vec4(2*scale * target_x + scale*Math.cos(t%(2*Math.PI)), 10, target_z*(2*scale) + scale + scale*Math.sin(t%(2*Math.PI)), 1);
+			const light_position2 = vec4(2*scale * target_x - scale*Math.cos(t%(2*Math.PI)), 2.5, target_z*(2*scale) + scale - scale*Math.sin(t%(2*Math.PI)), 1);
 			program_state.lights = [new Light(light_position, target_color, 10**10),
 				new Light(light_position1, target_color, 10**10),
 				new Light(light_position2, target_color, 10**10)];
@@ -193,22 +153,19 @@ export class Background extends Scene {
 
 			//draw target
 			this.shapes.square.draw(context, program_state, target_transformation, this.materials.phong.override({color: color(0,0,1,1)}));
-			// this.shapes.square.draw(context, program_state, target_transformation, this.materials.texture_2);
 			this.shapes.circle.draw(context, program_state, Mat4.scale(1,2.0,1).times(target_transformation.times(Mat4.scale(1,1,1))), this.materials.ring);
 
 
 			// Draw the stary sky
-			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t)**4)}));
-			// this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation(t/25, 0,1,0.25)), this.materials.star_texture);
+			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation((t/25)%(2*Math.PI), 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t%(2*Math.PI))**4)}));
 
-			//TODO: This is still not fully working
+			//draw the arrow
 			let arrow_transformation = Mat4.identity();
 			arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
 			arrow_transformation = arrow_transformation.times(Mat4.rotation(-arrow_y_angle,1,0,0));
 			arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,arrow_mag/2));
 
 			this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
-			// this.shapes.axis.draw(context, program_state, Mat4.identity(), this.materials.phong.override({color: color(1,0,0,1)}))
 	}
 	//TODO state if won/loss
 	show_explanation( document_element )
@@ -257,48 +214,38 @@ class Ring_Shader extends Shader {
 			void main(){
 				float mod_animation_time = animation_time - float(int(animation_time)/4 * 4); //should get animation_time % 4
 				float distance = distance(point_position, center);
-				// float temp = (sin(distance*6.0*3.14159265359) + 1.0) / 2.0;
-				// float val = 0.5 + 0.5*sin(6.28318530718 * abs(temp - 1. + mod_animation_time/4.0));
-				float val = sin(6.28318530718 * 3.0 * (distance+mod_animation_time/2.0));
-
+				float val1 = sin(6.28318530718 * 1.25 * (distance+mod_animation_time/2.0));
+				float val  = 1.0 - val1*val1;
 				gl_FragColor = vec4(0.0, val, val, val);
-				// if (val  <  0.3)
-				// {
-				// 	gl_FragColor = vec4(0.0,1.0,1.0,1.0);
-				// }
-				// else
-				// {
-				// 	gl_FragColor = vec4(0.0,0.0,0.0,0.0);
-				// }
 			}`;
 	}
 }
 
 
 
-class Star_Texture extends defs.Textured_Phong {
-	fragment_glsl_code() {
-			return this.shared_glsl_code() + `
-					varying vec2 f_tex_coord;
-					uniform sampler2D texture;
-					uniform float animation_time;
+// class Star_Texture extends defs.Textured_Phong {
+// 	fragment_glsl_code() {
+// 			return this.shared_glsl_code() + `
+// 					varying vec2 f_tex_coord;
+// 					uniform sampler2D texture;
+// 					uniform float animation_time;
 
-					void main(){
+// 					void main(){
 
-							float mod_animation_time = 0.25*animation_time - float(int(0.25*animation_time)/16 * 16); //should get animation_time % 16
+// 							float mod_animation_time = 0.25*animation_time - float(int(0.25*animation_time)/16 * 16); //should get animation_time % 16
 
-							vec2 new_coord = vec2(f_tex_coord.x + 2.0*mod_animation_time, f_tex_coord.y);
-							// Sample the texture image in the correct place:
-							vec4 tex_color = texture2D( texture, new_coord);
-							if( tex_color.w < .01 ) discard;
+// 							vec2 new_coord = vec2(f_tex_coord.x + 2.0*mod_animation_time, f_tex_coord.y);
+// 							// Sample the texture image in the correct place:
+// 							vec4 tex_color = texture2D( texture, new_coord);
+// 							if( tex_color.w < .01 ) discard;
 
-							float angle_time = mod_animation_time / 8.0 * 3.14159265359;
-							float new_ambient = ambient * (1.0-0.5*(sin(angle_time)*sin(angle_time)*sin(angle_time)*sin(angle_time)));
-							// Compute an initial (ambient) color:
-							gl_FragColor = vec4( ( tex_color.xyz ) * new_ambient, shape_color.w * tex_color.w );
-																																			 // Compute the final color with contributions from lights:
-							gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
-			} `;
-	}
-}
+// 							float angle_time = mod_animation_time / 8.0 * 3.14159265359;
+// 							float new_ambient = ambient * (1.0-0.5*(sin(angle_time)*sin(angle_time)*sin(angle_time)*sin(angle_time)));
+// 							// Compute an initial (ambient) color:
+// 							gl_FragColor = vec4( ( tex_color.xyz ) * new_ambient, shape_color.w * tex_color.w );
+// 																																			 // Compute the final color with contributions from lights:
+// 							gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+// 			} `;
+// 	}
+// }
 
