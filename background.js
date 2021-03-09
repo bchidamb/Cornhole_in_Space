@@ -141,19 +141,20 @@ export class Background extends Scene {
 					this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
 					// Define the global camera and projection matrices, which are stored in program_state.
 					//perspective
-					program_state.set_camera(Mat4.look_at(vec3(0, 10, -10), vec3(0, 0, 25), vec3(0, 1, 0)));
+					program_state.set_camera(Mat4.look_at(vec3(0, 20, -18), vec3(0, 0, 24), vec3(0, 1, 0)));
 
 			}
 			////////////////////////////////////
 			//TODO: Parameters
 			////////////////////////////////////
 			let scale = 2;
-			let target_x = -3;
+			//in units of the squares on the grid (a square is 2*scale x 2*scale)
+			let target_x = 0; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
 			let target_z = 5; // >= 0
 			//real coordinates of the ball
-			let x = 4;
-			let y = 4;
-			let z = 4;
+			let x = 0;
+			let y = 0;
+			let z = 0;
 			//arrow coordinates (where the head is)
 			let arrow_xz_angle = -Math.PI/4;
 			let arrow_y_angle = Math.PI/4;
@@ -193,7 +194,6 @@ export class Background extends Scene {
 			//draw target
 			this.shapes.square.draw(context, program_state, target_transformation, this.materials.phong.override({color: color(0,0,1,1)}));
 			// this.shapes.square.draw(context, program_state, target_transformation, this.materials.texture_2);
-
 			this.shapes.circle.draw(context, program_state, Mat4.scale(1,2.0,1).times(target_transformation.times(Mat4.scale(1,1,1))), this.materials.ring);
 
 
@@ -212,7 +212,7 @@ export class Background extends Scene {
 	}
 	//TODO state if won/loss
 	show_explanation( document_element )
-	{ document_element.innerHTML += `<p> This is a space cornhole game: </p>`;
+	{ document_element.innerHTML += `<p> This is a space cornhole game. Try to toss the ball onto the target </p>`;
 	}
 }
 
@@ -239,7 +239,6 @@ class Ring_Shader extends Shader {
 
 	vertex_glsl_code() {
 			// ********* VERTEX SHADER *********
-			// TODO:  Complete the main function of the vertex shader (Extra Credit Part II).
 			return this.shared_glsl_code() + `
 			attribute vec3 position;
 			uniform mat4 model_transform;
@@ -254,22 +253,23 @@ class Ring_Shader extends Shader {
 
 	fragment_glsl_code() {
 			// ********* FRAGMENT SHADER *********
-			// TODO:  Complete the main function of the fragment shader (Extra Credit Part II).
 			return this.shared_glsl_code() + `
 			void main(){
 				float mod_animation_time = animation_time - float(int(animation_time)/4 * 4); //should get animation_time % 4
 				float distance = distance(point_position, center);
-				float temp = (sin(distance*6.0*3.14159265359) + 1.0) / 2.0;
-				float val = abs(temp - mod_animation_time/4.0);
-				// gl_FragColor = vec4(val, val, val, 0.75*val);
-				if (val  <  0.3)
-				{
-					gl_FragColor = vec4(0.0,1.0,0.0,1.0);
-				}
-				else
-				{
-					gl_FragColor = vec4(0.0,0.0,0.0,0.0);
-				}
+				// float temp = (sin(distance*6.0*3.14159265359) + 1.0) / 2.0;
+				// float val = 0.5 + 0.5*sin(6.28318530718 * abs(temp - 1. + mod_animation_time/4.0));
+				float val = sin(6.28318530718 * 3.0 * (distance+mod_animation_time/2.0));
+
+				gl_FragColor = vec4(0.0, val, val, val);
+				// if (val  <  0.3)
+				// {
+				// 	gl_FragColor = vec4(0.0,1.0,1.0,1.0);
+				// }
+				// else
+				// {
+				// 	gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+				// }
 			}`;
 	}
 }
