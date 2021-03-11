@@ -77,6 +77,9 @@ export class Background extends Scene {
 					phong: new Material(new defs.Phong_Shader(),
 					{color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
 
+					// bump_phong: new Material(new Bump_Shader(),
+					// {color: color(1, 1, 1, 1),  ambient:0.5, diffusivity: 0.5, specularity: 1.0,}),
+
 					texture: new Material(new defs.Textured_Phong(),
 					{color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
@@ -100,9 +103,14 @@ export class Background extends Scene {
 					this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
 					// Define the global camera and projection matrices, which are stored in program_state.
 					//perspective
-					program_state.set_camera(Mat4.look_at(vec3(0, 22, -20), vec3(0, 0, 30), vec3(0, 1, 0)));
+
+					// program_state.set_camera(Mat4.look_at(vec3(0, +25, -30), vec3(0, 0, 12), vec3(0, 1, 0)));
 
 			}
+
+			//fix camera position
+			program_state.set_camera(Mat4.look_at(vec3(0, +35, -45), vec3(0, 0, 20), vec3(0, 1, 0)));
+
 			////////////////////////////////////
 			//TODO: Parameters
 			////////////////////////////////////
@@ -240,8 +248,38 @@ class Ring_Shader extends Shader {
 	}
 }
 
+// //mostly copied from Phong Shader
+// class Bump_Shader extends defs.Phong_Shader {
+// 	update_GPU( context, gpu_addresses, gpu_state, model_transform, material )
+// 	{             // update_GPU(): Define how to synchronize our JavaScript's variables to the GPU's.  This is where the shader
+// 								// recieves ALL of its inputs.  Every value the GPU wants is divided into two categories:  Values that belong
+// 								// to individual objects being drawn (which we call "Material") and values belonging to the whole scene or
+// 								// program (which we call the "Program_State").  Send both a material and a program state to the shaders
+// 								// within this function, one data field at a time, to fully initialize the shader for a draw.
 
+// 								// Fill in any missing fields in the Material object with custom defaults for this shader:
+// 		const defaults = { color: color( 0,0,0,1 ), ambient: 0, diffusivity: 1, specularity: 1, smoothness: 40 };
+// 		context.uniform1f(gpu_addresses.animation_time, graphics_state.animation_time / 1000);
+// 		material = Object.assign( {}, defaults, material );
 
+// 		this.send_material ( context, gpu_addresses, material );
+// 		this.send_gpu_state( context, gpu_addresses, gpu_state, model_transform );
+// 	}
+
+// 	fragment_glsl_code()         // ********* FRAGMENT SHADER *********
+// 	{                          // A fragment is a pixel that's overlapped by the current triangle.
+// 														 // Fragments affect the final image or get discarded due to depth.
+// 		return this.shared_glsl_code() + `
+// 			void main()
+// 				{                                                           // Compute an initial (ambient) color:
+// 					vec3 bumped_N  = N - vec3(0,1,0);
+// 					gl_FragColor = vec4( shape_color.xyz * ambient, shape_color.w );
+// 																																	 // Compute the final color with contributions from lights:
+// 					gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
+// 				} ` ;
+// 	}
+
+// }
 // class Star_Texture extends defs.Textured_Phong {
 // 	fragment_glsl_code() {
 // 			return this.shared_glsl_code() + `
