@@ -117,12 +117,19 @@ export class Background extends Scene {
 			let scale = 2.5;
 			//in units of the squares on the grid (a square is 2*scale x 2*scale)
 			//Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
-			let target_x = 5; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
-			let target_z = 10; // >= 0
+			let target_x = 1; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
+			let target_z = 7; // >= 0
+			let target_y = 0;
 			//real coordinates of the ball
 			let x = 0;
 			let y = 0;
-			let z = 0; //-scale; //????
+			let z = 0;
+			//mouse movement on the screen;
+			let dx = -8;
+			let dy = 12;
+			let dz = 15;
+			//mouse to velocity scaline
+			let k = 1;
 			//arrow coordinates (where the head is)
 			let arrow_xz_angle = -Math.PI/4;
 			let arrow_y_angle = Math.PI/4;
@@ -155,7 +162,19 @@ export class Background extends Scene {
 				new Light(light_position2, target_color, 10**10)];
 
 			//draw ball
-			this.shapes.sphere.draw(context, program_state, Mat4.translation(x, y, z), this.materials.phong);
+			this.shapes.sphere.draw(context, program_state, Mat4.translation(x + k*dx*t, y + k*dy*t -  1/2*5*t*t , z + k*dz*t), this.materials.phong);
+
+			//check if it hit target 
+			if ((z + k*dz*t) < (target_z + 0.5) &&  
+			   (z + k*dz*t) > (target_z - .5) &&
+			   (x + k*dx*t) < (target_x + .5) && 
+			   (x + k*dx*t) > (target_x - .5) &&
+			   (y + k*dy*t -  1/2*5*t*t) < (target_y + .5) && 
+			   (y + k*dy*t -  1/2*5*t*t) > (target_y - .5))
+			   {
+			   	//target hit
+			   }
+			   
 			//The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
 			this.shapes.full.draw(context, program_state, Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
 
