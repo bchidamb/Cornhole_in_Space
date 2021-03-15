@@ -96,6 +96,7 @@ export class Background extends Scene {
             this.state_id = 0;
 			this.target = [1,7];
 			this.scale = 3;
+			this.follow_ball = false;
 	}
 
 	make_control_panel() {
@@ -105,6 +106,7 @@ export class Background extends Scene {
 			this.state_id = 0;
 			this.target = [1,7];
 			this.scale = 3;
+			this.follow_ball = false;
 			this.update_explanation();
 		});
 		this.key_triggered_button("Target Left", ["a"], () => {
@@ -119,17 +121,20 @@ export class Background extends Scene {
 			if(this.target[1] < 80)
 				this.target[1]++;
 		});
-		this.key_triggered_button("Target Backwards", ["x"], () => {
+		this.key_triggered_button("Target Backwards", ["s"], () => {
 			if(this.target[1] > 0)
 				this.target[1]--;
 		});
-		this.key_triggered_button("Increase Scale", ["s"], () => {
+		this.key_triggered_button("Increase Scale", ["Shift", " "], () => {
 			if(this.scale < 20)
 				this.scale++;
 		});
 		this.key_triggered_button("Decrease Scale", [" "], () => {
-			if(this.scale > 2)
+			if(this.scale > 1)
 				this.scale--;
+		});
+		this.key_triggered_button("Follow Ball", ["c"], () => {
+			this.follow_ball = !this.follow_ball;
 		});
 
 	}
@@ -155,13 +160,13 @@ export class Background extends Scene {
     }
 
 	display(context, program_state) {
-			if (!context.scratchpad.controls) {
-				// this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-				// Define the global camera and projection matrices, which are stored in program_state.
-				//perspective
-				program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
+			// if (!context.scratchpad.controls) {
+			// 	// this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+			// 	// Define the global camera and projection matrices, which are stored in program_state.
+			// 	//perspective
+			// 	program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
 
-			}
+			// }
 
             if (!this.controls_setup) {
                 this.add_mouse_controls(context.canvas);
@@ -278,7 +283,15 @@ export class Background extends Scene {
 
                 this.update_explanation();
             }
-
+			//collision with background
+			else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 > 200**2)
+			{
+				this.win_condition = false;
+				this.state_id = 3;
+				this.t_released = 0;
+				this.mouse.released = false;
+				this.update_explanation();
+			}
 			//The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
 			this.shapes.full.draw(context, program_state, Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
 
@@ -299,9 +312,19 @@ export class Background extends Scene {
             if (this.state_id == 1) {
 	            this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
             }
+
+						//follow the ball if the ball is flying and the setting is on
+						if(this.follow_ball && this.state_id == 2)
+						{
+							program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released + 5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+						}
+						//else be in the default camera position
+						else{
+							program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
+						}
 	}
 
-    show_explanation( document_element )
+	show_explanation( document_element )
 	{
         this.explanation_element = document_element;
         this.explanation_element.innerHTML += `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
