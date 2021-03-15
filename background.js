@@ -197,12 +197,13 @@ export class Background extends Scene {
             if (this.mouse.anchor) {
                 this.state_id = 1;
                 this.update_explanation();
-                if ((-60 <= this.mouse.anchor[0]) && (this.mouse.anchor[0] < 60) && (180 <= this.mouse.anchor[1]) && (this.mouse.anchor[1] < 300)) {
-                    let mouse_x = (this.mouse.from_center[0] - this.mouse.anchor[0]) / pixel_scale;
-                    let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
-                    arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
-                    arrow_xz_angle = mouse_x / (0.0001 + mouse_y);
-                }
+                // if ((-60 <= this.mouse.anchor[0]) && (this.mouse.anchor[0] < 60) && (180 <= this.mouse.anchor[1]) && (this.mouse.anchor[1] < 300)) {
+								let mouse_x = (this.mouse.from_center[0] - this.mouse.anchor[0]) / pixel_scale;
+								let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
+								arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
+								console.log(arrow_mag);
+								arrow_xz_angle = mouse_x / (0.0001 + mouse_y);
+                // }
 
             }
 
