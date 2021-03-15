@@ -1,4 +1,4 @@
-import {defs, tiny} from './examples/common.js';
+import {defs, tiny} from '../examples/common.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -8,7 +8,7 @@ const gamestate = {};
 
 export {gamestate};
 
-gamestate.GameState =
+const GameState = gamestate.GameState =
 class GameState {
 
     constructor(scene, physicsEngine, target_coords) {
@@ -25,11 +25,15 @@ class GameState {
          *     3 -- complete
          */
 
-        this.state = 0;
+        this.state_id = 0;
         this.scene = scene;
         this.physicsEngine = physicsEngine;
-        this.display_message = "";
+        this.display_message = "This is a space cornhole game. Try to toss the ball onto the target";
         this.controls_setup = false;
+        this.x1 = target_coords[0];
+        this.z1 = target_coords[1];
+        this.x2 = target_coords[2];
+        this.z2 = target_coords[3];
     }
 
     add_mouse_controls( canvas )
@@ -52,19 +56,19 @@ class GameState {
             this.add_mouse_controls(context.canvas);
         }
 
-        if ((this.state == 0) && this.get_mouse_click()) {
-            this.state = 1;
+        if ((this.state_id == 0) && this.get_mouse_click()) {
+            this.state_id = 1;
         }
-        else if ((this.state == 1) && (!this.get_mouse_click())) {
+        else if ((this.state_id == 1) && (!this.get_mouse_click())) {
             this.set_mouse_coords();
-            this.state = 2;
+            this.state_id = 2;
         }
-        else if (this.state == 2) {
+        else if (this.state_id == 2) {
             ball_coords = this.physicsEngine.get_ball_coords();
             ball_radius = this.physicsEngine.get_ball_radius();
             if ((ball_coords[1] - ball_radius) < 0) {
-                this.state = 3;
-                if ((ball_coords[0] >= x1) && (ball_coords[0] < x2) && (ball_coords[2] >= z1) && (ball_coords[2] < z2)) {
+                this.state_id = 3;
+                if ((ball_coords[0] >= this.x1) && (ball_coords[0] < this.x2) && (ball_coords[2] >= this.z1) && (ball_coords[2] < this.z2)) {
                     this.display_message = "Target Hit!";
                     this.win_condition = true;
                 }
@@ -80,8 +84,8 @@ class GameState {
         // Resets the game state to idle
         // scene should have a key triggered button which calls this function
 
-        this.state = 0;
-        this.display_message = "";
+        this.state_id = 0;
+        this.display_message = "This is a space cornhole game. Try to toss the ball onto the target";
         this.mouse.from_center = vec(0, 0);
     }
 
@@ -95,7 +99,7 @@ class GameState {
 
     get_mouse_coords() {
         // Returns the mouse coordinates as an array
-        // physics engine should call this to calculate ball trajectory
+        // physics engine should call this to calculate initial ball velocity
 
         return this.mouse_coords;
     }
@@ -111,7 +115,7 @@ class GameState {
         // Returns 1 if the target was hit, 0 if missed, -1 if game state is not complete
         // scene should call this every frame
 
-        if (!(this.state == 3)) {
+        if (!(this.state_id == 3)) {
             return -1;
         }
         else if (this.win_condition) {

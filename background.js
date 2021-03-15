@@ -91,67 +91,99 @@ export class Background extends Scene {
 			}
 			//REMEMBER so that the sphere is moderately oriented
 			this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
+            this.controls_setup = false;
 
+            this.state_id = 0;
 
 	}
 
 	make_control_panel() {
+        this.key_triggered_button("Reset", ["r"], () => {
+            this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
+            this.t_released = 0;
+            this.state_id = 0;
+            this.update_explanation();
+        });
 	}
+
+    add_mouse_controls( canvas )
+    {                                       // add_mouse_controls():  Attach HTML mouse events to the drawing canvas.
+                                            // First, measure mouse steering, for rotating the flyaround camera:
+        this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined };
+        const mouse_position = ( e, rect = canvas.getBoundingClientRect() ) =>
+                                     vec( e.clientX - (rect.left + rect.right)/2, e.clientY - (rect.bottom + rect.top)/2 );
+                                  // Set up mouse response.  The last one stops us from reacting if the mouse leaves the canvas:
+        document.addEventListener( "mouseup",   e => {
+            this.mouse.dx = this.mouse.from_center[0] - this.mouse.anchor[0];
+            this.mouse.dy = this.mouse.from_center[1] - this.mouse.anchor[1];
+            this.mouse.anchor = undefined;
+            this.mouse.from_center.scale_by(0);
+            this.t_released = 0;
+            this.mouse.released = true;
+        } );
+        canvas  .addEventListener( "mousedown", e => { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; } );
+        canvas  .addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
+        canvas  .addEventListener( "mouseout",  e => { if( !this.mouse.anchor ) this.mouse.from_center.scale_by(0) } );
+    }
 
 	display(context, program_state) {
 			if (!context.scratchpad.controls) {
-					this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-					// Define the global camera and projection matrices, which are stored in program_state.
-					//perspective
-
-					// program_state.set_camera(Mat4.look_at(vec3(0, +25, -30), vec3(0, 0, 12), vec3(0, 1, 0)));
+				// this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+				// Define the global camera and projection matrices, which are stored in program_state.
+				//perspective
+				program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
 
 			}
 
-			//fix camera position
-			program_state.set_camera(Mat4.look_at(vec3(0, +35, -45), vec3(0, 0, 20), vec3(0, 1, 0)));
+            if (!this.controls_setup) {
+                this.add_mouse_controls(context.canvas);
+                this.controls_setup = true;
+            }
 
 			////////////////////////////////////
-			//TODO: Parameters
+			// Parameters
 			////////////////////////////////////
-			let scale = 2.5;
+			let scale = 3;
 			//in units of the squares on the grid (a square is 2*scale x 2*scale)
 			//Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
 			let target_x = 1; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
 			let target_z = 7; // >= 0
 			let target_y = 0;
-			//real coordinates of the ball
+			// starting coordinates of the ball
 			let x = 0;
-			let y = 0;
-			let z = 0;
-			//mouse movement on the screen;
-			let dx = -8;
-			let dy = 12;
-			let dz = 15;
-			//mouse to velocity scaline
-			let k = 1;
+			let y = 4;
+			let z = 10;
 			//arrow coordinates (where the head is)
 			let arrow_xz_angle = -Math.PI/4;
 			let arrow_y_angle = Math.PI/4;
-			let arrow_mag = 8; //magnitude
+			let arrow_mag = 0; //magnitude
+            let pixel_scale = 100; // approximate width of foreground square in pixels
+            // mouse to arrow length scaling
+            let arrow_scale = 5;
+            //mouse movement on the screen;
+			let dx = 0;
+			let dy = 0;
+			let dz = 0;
+			//mouse to velocity scaling
+			let k = 10;
 			/////////////////////////////////////
-
 
 			program_state.projection_transform = Mat4.perspective(
 					Math.PI / 4, context.width / context.height, 1, 400);
-
 
 			let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
 			let model_transform = Mat4.identity();
 
-			//Note that each square is 2(scale) X 2(scale)
+			// Note that each square is 2(scale) X 2(scale)
 			let target_color = color(0,0,1,1);
 
-			let base_target_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
+			let base_target_transformation = Mat4.translation(0,0.02,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
 			//move the target to the correct position
 			let target_transformation = Mat4.translation(2*scale * target_x, 0, 2*scale * target_z).times(base_target_transformation);
 
+            // get target coordinates in 3D
+            let target_center = vec3(2*scale * target_x, 0, 2*scale * target_z + scale);
 
 			//make light over the target
 			const light_position = vec4(2*scale * target_x, 5, target_z*(2*scale) + scale, 1);
@@ -161,20 +193,60 @@ export class Background extends Scene {
 				new Light(light_position1, target_color, 10**10),
 				new Light(light_position2, target_color, 10**10)];
 
-			//draw ball
-			this.shapes.sphere.draw(context, program_state, Mat4.translation(x + k*dx*t, y + k*dy*t -  1/2*5*t*t , z + k*dz*t), this.materials.phong);
+            // calculate arrow vector
+            if (this.mouse.anchor) {
+                this.state_id = 1;
+                this.update_explanation();
+                if ((-60 <= this.mouse.anchor[0]) && (this.mouse.anchor[0] < 60) && (180 <= this.mouse.anchor[1]) && (this.mouse.anchor[1] < 300)) {
+                    let mouse_x = (this.mouse.from_center[0] - this.mouse.anchor[0]) / pixel_scale;
+                    let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
+                    arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
+                    arrow_xz_angle = mouse_x / (0.0001 + mouse_y);
+                }
 
-			//check if it hit target 
-			if ((z + k*dz*t) < (target_z + 0.5) &&  
-			   (z + k*dz*t) > (target_z - .5) &&
-			   (x + k*dx*t) < (target_x + .5) && 
-			   (x + k*dx*t) > (target_x - .5) &&
-			   (y + k*dy*t -  1/2*5*t*t) < (target_y + .5) && 
-			   (y + k*dy*t -  1/2*5*t*t) > (target_y - .5))
-			   {
-			   	//target hit
-			   }
-			   
+            }
+
+            let ball_transform = Mat4.translation(x, y, z);
+            // calculate ball velocity from mouse coords
+            if (this.mouse.released) {
+                this.state_id = 2;
+                this.update_explanation();
+                let mouse_x = (this.mouse.dx) / pixel_scale;
+                let mouse_y = (this.mouse.dy) / pixel_scale;
+                dx = mouse_x;
+                dy = Math.sin(arrow_y_angle) * mouse_y;
+                dz = Math.cos(arrow_y_angle) * mouse_y;
+                this.t_released += dt;
+
+                ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released);
+            }
+
+			//draw ball
+			this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
+
+            // check if it landed
+            if ((y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) < (target_center[1] + scale) &&
+                (y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) > (target_center[1] - scale)) {
+
+                // check if it hit target
+    			if ((z + k*dz*this.t_released) < (target_center[2] + scale) &&
+    			   (z + k*dz*this.t_released) > (target_center[2] - scale) &&
+    			   (x + k*dx*this.t_released) < (target_center[0] + scale) &&
+    			   (x + k*dx*this.t_released) > (target_center[0] - scale))
+    		    {
+                    this.win_condition = true;
+                }
+                else {
+                    this.win_condition = false;
+                }
+
+                this.state_id = 3;
+                this.t_released = 0;
+                this.mouse.released = false;
+
+                this.update_explanation();
+            }
+
 			//The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
 			this.shapes.full.draw(context, program_state, Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
 
@@ -182,22 +254,42 @@ export class Background extends Scene {
 			this.shapes.square.draw(context, program_state, target_transformation, this.materials.phong.override({color: color(0,0,1,1)}));
 			this.shapes.circle.draw(context, program_state, Mat4.scale(1,2.0,1).times(target_transformation.times(Mat4.scale(1,1,1))), this.materials.ring);
 
-
 			// Draw the stary sky
 			this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation((t/25)%(2*Math.PI), 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t%(2*Math.PI))**4)}));
 
 			//draw the arrow
 			let arrow_transformation = Mat4.identity();
+            arrow_transformation = arrow_transformation.times(Mat4.translation(x, y, z));
 			arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
 			arrow_transformation = arrow_transformation.times(Mat4.rotation(-arrow_y_angle,1,0,0));
 			arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,arrow_mag/2));
 
-			this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
+            if (this.state_id == 1) {
+	            this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
+            }
 	}
-	//TODO state if won/loss
-	show_explanation( document_element )
-	{ document_element.innerHTML += `<p> This is a space cornhole game. Try to toss the ball onto the target </p>`;
+
+    show_explanation( document_element )
+	{
+        this.explanation_element = document_element;
+        this.explanation_element.innerHTML += `<p> This is a space cornhole game. Try to toss the ball onto the target </p>`;
 	}
+
+    // state if won/loss
+    update_explanation()
+    {
+        if (this.state_id == 0) {
+            this.explanation_element.innerHTML = `<p> This is a space cornhole game. Try to toss the ball onto the target </p>`;
+        }
+        else if (this.state_id == 3) {
+            if (this.win_condition) {
+                this.explanation_element.innerHTML = `<p> Target hit! </p>`;
+            }
+            else {
+                this.explanation_element.innerHTML = `<p> Target missed. Try again </p>`;
+            }
+        }
+    }
 }
 
 class Ring_Shader extends Shader {
@@ -305,4 +397,3 @@ class Ring_Shader extends Shader {
 // 			} `;
 // 	}
 // }
-
