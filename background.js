@@ -201,7 +201,7 @@ export class Background extends Scene {
 								let mouse_x = (this.mouse.from_center[0] - this.mouse.anchor[0]) / pixel_scale;
 								let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
 								arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
-								console.log(arrow_mag);
+								// console.log(arrow_mag);
 								arrow_xz_angle = mouse_x / (0.0001 + mouse_y);
                 // }
 
@@ -277,14 +277,14 @@ export class Background extends Scene {
     show_explanation( document_element )
 	{
         this.explanation_element = document_element;
-        this.explanation_element.innerHTML += `<p> This is a space cornhole game. Try to toss the ball onto the target </p>`;
+        this.explanation_element.innerHTML += `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
 	}
 
     // state if won/loss
     update_explanation()
     {
         if (this.state_id == 0) {
-            this.explanation_element.innerHTML = `<p> This is a space cornhole game. Try to toss the ball onto the target </p>`;
+            this.explanation_element.innerHTML = `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
         }
         else if (this.state_id == 3) {
             if (this.win_condition) {
