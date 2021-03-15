@@ -207,6 +207,7 @@ export class Background extends Scene {
             }
 
             let ball_transform = Mat4.translation(x, y, z);
+            let shadow_transform = Mat4.translation(x, 0.1, z);
             // calculate ball velocity from mouse coords
             if (this.mouse.released) {
                 this.state_id = 2;
@@ -219,14 +220,17 @@ export class Background extends Scene {
                 this.t_released += dt;
 
                 ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released);
-            }
+								shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
+							}
 
 			//draw ball
+
 			this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
+			this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
 
             // check if it landed
-            if ((y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) < (target_center[1] + scale) &&
-                (y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) > (target_center[1] - scale)) {
+            if ((y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) < (target_center[1] + 1) &&
+                (y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) > (target_center[1] - 1)) {
 
                 // check if it hit target
     			if ((z + k*dz*this.t_released) < (target_center[2] + scale) &&
