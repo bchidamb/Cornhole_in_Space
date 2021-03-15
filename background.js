@@ -96,7 +96,7 @@ export class Background extends Scene {
         this.state_id = 0;
         this.target = [1,7];
         this.scale = 3;
-        this.follow_ball = false;
+        this.camera_setting = 0;
     }
 
     make_control_panel() {
@@ -106,7 +106,7 @@ export class Background extends Scene {
             this.state_id = 0;
             this.target = [1,7];
             this.scale = 3;
-            this.follow_ball = false;
+            this.camera_setting = 0;
             this.update_explanation();
         });
         this.key_triggered_button("Target Left", ["a"], () => {
@@ -133,8 +133,14 @@ export class Background extends Scene {
             if(this.scale > 2)
                 this.scale--;
         });
-        this.key_triggered_button("Follow Ball", ["c"], () => {
-            this.follow_ball = !this.follow_ball;
+        this.key_triggered_button("Static Camera", ["0"], () => {
+            this.camera_setting = 0;
+        });
+        this.key_triggered_button("Watch Ball", ["1"], () => {
+            this.camera_setting = 1;
+        });
+        this.key_triggered_button("Follow Ball", ["2"], () => {
+            this.camera_setting = 2;
         });
 
     }
@@ -310,9 +316,21 @@ export class Background extends Scene {
         }
 
         //follow the ball if the ball is flying and the setting is on
-        if(this.follow_ball && this.state_id == 2)
+        if(this.camera_setting !== 0 && this.state_id == 2)
         {
-            program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released + 5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+            if(this.camera_setting === 1) {
+                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released + 5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+            }
+            else if(this.camera_setting === 2)
+            {
+                const merge_time = 0.75
+                let ct = this.t_released - merge_time;
+                if(ct > 0)
+                    program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct, y + k*dy*ct - 1/2*5*ct**2, z + k*dz*ct), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                else
+                    program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+
+            }
         }
         //else be in the default camera position
         else{
