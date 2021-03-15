@@ -292,8 +292,8 @@ export class Background extends Scene {
 			//draw the arrow
 			let arrow_transformation = Mat4.identity();
             arrow_transformation = arrow_transformation.times(Mat4.translation(x, y, z));
-			arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
 			arrow_transformation = arrow_transformation.times(Mat4.rotation(-arrow_y_angle,1,0,0));
+			arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
 			arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,arrow_mag/2));
 
             if (this.state_id == 1) {
