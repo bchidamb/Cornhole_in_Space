@@ -94,16 +94,44 @@ export class Background extends Scene {
             this.controls_setup = false;
 
             this.state_id = 0;
-
+			this.target = [1,7];
+			this.scale = 3;
 	}
 
 	make_control_panel() {
-        this.key_triggered_button("Reset", ["r"], () => {
-            this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
-            this.t_released = 0;
-            this.state_id = 0;
-            this.update_explanation();
-        });
+		this.key_triggered_button("Reset", ["r"], () => {
+			this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
+			this.t_released = 0;
+			this.state_id = 0;
+			this.target = [1,7];
+			this.scale = 3;
+			this.update_explanation();
+		});
+		this.key_triggered_button("Target Left", ["a"], () => {
+			if(this.target[0] < 25)
+				this.target[0]++;
+		});
+		this.key_triggered_button("Target Right", ["d"], () => {
+			if(this.target[0] > -25)
+				this.target[0]--;
+		});
+		this.key_triggered_button("Target Forwards", ["w"], () => {
+			if(this.target[1] < 80)
+				this.target[1]++;
+		});
+		this.key_triggered_button("Target Backwards", ["x"], () => {
+			if(this.target[1] > 0)
+				this.target[1]--;
+		});
+		this.key_triggered_button("Increase Scale", ["s"], () => {
+			if(this.scale < 20)
+				this.scale++;
+		});
+		this.key_triggered_button("Decrease Scale", [" "], () => {
+			if(this.scale > 2)
+				this.scale--;
+		});
+
 	}
 
     add_mouse_controls( canvas )
@@ -143,12 +171,11 @@ export class Background extends Scene {
 			////////////////////////////////////
 			// Parameters
 			////////////////////////////////////
-			let scale = 3;
+			let scale = this.scale;
 			//in units of the squares on the grid (a square is 2*scale x 2*scale)
 			//Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
-			let target_x = 1; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
-			let target_z = 7; // >= 0
-			let target_y = 0;
+			let target_x = this.target[0]; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
+			let target_z = this.target[1]; // >= 0
 			// starting coordinates of the ball
 			let x = 0;
 			let y = 4;
