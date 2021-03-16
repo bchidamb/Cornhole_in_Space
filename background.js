@@ -5,16 +5,12 @@ const {
 } = tiny;
 
 class Grid extends Shape {
-    //This is a shape object. It takes in the number of rows and number of columns and produces a single set of the diagonals of a grid
+	// Takes in the number of rows and number of columns and produces a single set of the diagonals of a grid
     constructor(rows, cols) {
         super("position", "normal", "texture_coord");
         for(let i=0; i < cols; i++)
-        {
             for(let j=i%2; j < rows; j+=2)
-            {
                 defs.Square.insert_transformed_copy_into(this, [], Mat4.translation(2*i-cols,0,2*j).times(Mat4.rotation(Math.PI/2.,1,0,0)));
-            }
-        }
     }
 }
 
@@ -27,15 +23,13 @@ class Arrow extends Shape {
     }
 }
 
-
-//Use this not Grid!!!
-//Basically makes two seperate grids and allows the user to treat them as a single object (Note: This is not a real shape!!!)
+// Use this not Grid!!!
+// Makes two seperate grids and allows the user to treat them as a single object 
+// (Note: This is not a real shape!!!)
 class FullGrid {
-    //produces the full n_rows x n_cols grid
+    // Produces the full n_rows x n_cols grid
     constructor(n_rows, n_cols, color1 = color(1,1,1,1), color2 = color(0,0,0,1)) {
-        // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         this.grid = new Grid(n_rows, n_cols);
-        // this.n_rows = n_rows;
         this.rows = n_rows;
         this.materials = {
             phong1: new Material(new defs.Phong_Shader(),
@@ -45,28 +39,24 @@ class FullGrid {
         };
     }
 
-    //the draw function: similar to the draw function for shapes except that it has two optional materials
+    // Draw function: Similar to the draw function for shapes except that it has two optional materials
     draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2)
     {
         this.grid.draw(context, program_state, model_transform, material1);
         this.grid.draw(context, program_state, model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(+2,0,2*(-this.rows + 1))), material2);
     }
-
 }
 
-
 export class Background extends Scene {
-
     constructor() {
-        // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
 
         this.shapes = {
-            //declares a Grid of 25 rows and 30 columns (note: default square size is 2x2)
+            // Declares a Grid of 25 rows and 30 columns (note: default square size is 2x2)
             square: new defs.Square(),
             sphere: new defs.Subdivision_Sphere(5),
 
-            //NOTE: we are assuming that there are an ODD number of columns
+            // NOTE: we are assuming that there are an ODD number of columns
             full: new FullGrid(50, 81, color(1,1,1,1), color(0,0,0,1)),
             arrow: new Arrow(),
             circle: new defs.Regular_2D_Polygon(25,25),
@@ -87,9 +77,9 @@ export class Background extends Scene {
             // {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
 
             ring: new Material(new Ring_Shader()),
-
         }
-        //REMEMBER so that the sphere is moderately oriented
+
+        // REMEMBER so that the sphere is moderately oriented
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
         this.controls_setup = false;
 
@@ -145,13 +135,14 @@ export class Background extends Scene {
 
     }
 
+	// Attach HTML mouse events to the drawing canvas.
     add_mouse_controls( canvas )
-    {                                       // add_mouse_controls():  Attach HTML mouse events to the drawing canvas.
-                                            // First, measure mouse steering, for rotating the flyaround camera:
+    {
+        // First, measure mouse steering, for rotating the flyaround camera:
         this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined };
         const mouse_position = ( e, rect = canvas.getBoundingClientRect() ) =>
                                      vec( e.clientX - (rect.left + rect.right)/2, e.clientY - (rect.bottom + rect.top)/2 );
-                                  // Set up mouse response.  The last one stops us from reacting if the mouse leaves the canvas:
+        // Set up mouse response. The last one stops us from reacting if the mouse leaves the canvas:
         document.addEventListener( "mouseup",   e => {
             this.mouse.dx = this.mouse.from_center[0] - this.mouse.anchor[0];
             this.mouse.dy = this.mouse.from_center[1] - this.mouse.anchor[1];
@@ -159,7 +150,7 @@ export class Background extends Scene {
             this.mouse.from_center.scale_by(0);
             this.t_released = 0;
             this.mouse.released = true;
-        } );
+        });
         canvas  .addEventListener( "mousedown", e => { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; } );
         canvas  .addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
         canvas  .addEventListener( "mouseout",  e => { if( !this.mouse.anchor ) this.mouse.from_center.scale_by(0) } );
@@ -171,7 +162,6 @@ export class Background extends Scene {
         // 	// Define the global camera and projection matrices, which are stored in program_state.
         // 	//perspective
         // 	program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
-
         // }
 
         if (!this.controls_setup) {
@@ -183,26 +173,32 @@ export class Background extends Scene {
         // Parameters
         ////////////////////////////////////
         let scale = this.scale;
-        //in units of the squares on the grid (a square is 2*scale x 2*scale)
-        //Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
+
+        // In units of the squares on the grid (a square is 2*scale x 2*scale)
+        // Note coordinates of target at (target_x, target_z) are x:[2*scale * target_x - scale, 2*scale * target_x + scale], z:[target_z*(2*scale), target_z*(2*scale)+(2*scale)]
         let target_x = this.target[0]; // + left, - right, 0 center: pick a value in sight please positive or negative: 0 is in center
         let target_z = this.target[1]; // >= 0
-        // starting coordinates of the ball
+
+        // Starting coordinates of the ball
         let x = 0;
         let y = 4;
         let z = 10;
-        //arrow coordinates (where the head is)
+
+        // Arrow coordinates (where the head is)
         let arrow_xz_angle = -Math.PI/4;
         let arrow_y_angle = Math.PI/4;
-        let arrow_mag = 0; //magnitude
-        let pixel_scale = 100; // approximate width of foreground square in pixels
-        // mouse to arrow length scaling
+        let arrow_mag = 0; 		// Magnitude
+        let pixel_scale = 100; 	// Approximate width of foreground square in pixels
+
+        // Mouse to arrow length scaling
         let arrow_scale = 5;
-        //mouse movement on the screen;
+
+        // Mouse movement on the screen
         let dx = 0;
         let dy = 0;
         let dz = 0;
-        //mouse to velocity scaling
+
+        // Mouse to velocity scaling
         let k = 10;
         /////////////////////////////////////
 
@@ -217,13 +213,13 @@ export class Background extends Scene {
         let target_color = color(0,0,1,1);
 
         let base_target_transformation = Mat4.translation(0,0.02,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
-        //move the target to the correct position
+        // Move the target to the correct position
         let target_transformation = Mat4.translation(2*scale * target_x, 0, 2*scale * target_z).times(base_target_transformation);
 
-        // get target coordinates in 3D
+        // Get target coordinates in 3D
         let target_center = vec3(2*scale * target_x, 0, 2*scale * target_z + scale);
 
-        //make light over the target
+        // Make light over the target
         const light_position = vec4(2*scale * target_x, 5, target_z*(2*scale) + scale, 1);
         const light_position1 = vec4(2*scale * target_x + scale*Math.cos(t%(2*Math.PI)), 10, target_z*(2*scale) + scale + scale*Math.sin(t%(2*Math.PI)), 1);
         const light_position2 = vec4(2*scale * target_x - scale*Math.cos(t%(2*Math.PI)), 2.5, target_z*(2*scale) + scale - scale*Math.sin(t%(2*Math.PI)), 1);
@@ -231,7 +227,7 @@ export class Background extends Scene {
             new Light(light_position1, target_color, 10**10),
             new Light(light_position2, target_color, 10**10)];
 
-        // calculate arrow vector
+        // Calculate arrow vector
         if (this.mouse.anchor) {
             this.state_id = 1;
             this.update_explanation();
@@ -243,7 +239,8 @@ export class Background extends Scene {
 
         let ball_transform = Mat4.translation(x, y, z);
         let shadow_transform = Mat4.translation(x, 0.1, z);
-        // calculate ball velocity from mouse coords
+
+        // Calculate ball velocity from mouse coords
         if (this.mouse.released) {
             this.state_id = 2;
             this.update_explanation();
@@ -258,16 +255,15 @@ export class Background extends Scene {
                             shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
         }
 
-        //draw ball
-
+        // Draw ball
         this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
         this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
 
-        // check if it landed
+        // Check if the ball landed
         if ((y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) < (target_center[1] + 1) &&
             (y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) > (target_center[1] - 1)) {
 
-            // check if it hit target
+            // Check if the ball hit target
             if ((z + k*dz*this.t_released) < (target_center[2] + scale) &&
                 (z + k*dz*this.t_released) > (target_center[2] - scale) &&
                 (x + k*dx*this.t_released) < (target_center[0] + scale) &&
@@ -285,7 +281,7 @@ export class Background extends Scene {
 
             this.update_explanation();
         }
-        //collision with background
+        // Collision with background
         else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 > 200**2)
         {
             this.win_condition = false;
@@ -294,28 +290,28 @@ export class Background extends Scene {
             this.mouse.released = false;
             this.update_explanation();
         }
-        //The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
+
+        // The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
         this.shapes.full.draw(context, program_state, Mat4.translation(scale,0,scale).times(Mat4.scale(scale,1,scale)));
 
-        //draw target
+        // Draw target
         this.shapes.square.draw(context, program_state, target_transformation, this.materials.phong.override({color: color(0,0,1,1)}));
         this.shapes.circle.draw(context, program_state, Mat4.scale(1,2.0,1).times(target_transformation.times(Mat4.scale(1,1,1))), this.materials.ring);
 
         // Draw the stary sky
         this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation((t/25)%(2*Math.PI), 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t%(2*Math.PI))**4)}));
 
-        //draw the arrow
+        // Draw the arrow
         let arrow_transformation = Mat4.identity();
         arrow_transformation = arrow_transformation.times(Mat4.translation(x, y, z));
         arrow_transformation = arrow_transformation.times(Mat4.rotation(-arrow_y_angle,1,0,0));
         arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
         arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,arrow_mag/2));
 
-        if (this.state_id == 1) {
+        if (this.state_id == 1)
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
-        }
 
-        //follow the ball if the ball is flying and the setting is on
+        // Follow the ball if the ball is flying and the setting is on
         if(this.camera_setting !== 0 && this.state_id == 2)
         {
             if(this.camera_setting === 1) {
@@ -329,22 +325,21 @@ export class Background extends Scene {
                     program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct, y + k*dy*ct - 1/2*5*ct**2, z + k*dz*ct), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
                 else
                     program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
-
             }
         }
-        //else be in the default camera position
+        // Else place the camera in the default camera position
         else{
             program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
         }
     }
 
-    show_explanation( document_element )
+    show_explanation(document_element)
     {
         this.explanation_element = document_element;
         this.explanation_element.innerHTML += `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
     }
 
-    // state if won/loss
+    // State if won/loss
     update_explanation()
     {
         if (this.state_id == 0) {
