@@ -89,7 +89,7 @@ export class Background extends Scene {
         this.camera_setting = 0;
         this.gravity = 5;
         this.world_size = 200;
-
+        this.time_scale = 10;
     }
 
     make_control_panel() {
@@ -101,6 +101,7 @@ export class Background extends Scene {
             this.scale = 3;
             this.gravity = 5;
             this.camera_setting = 0;
+            this.time_scale = 10;
             this.update_explanation();
         });
         this.key_triggered_button("Target Left", ["a"], () => {
@@ -135,6 +136,15 @@ export class Background extends Scene {
             if(this.state_id !== 2 && this.gravity > 1)
                 this.gravity--;
         });
+        this.key_triggered_button("Speed up", ["t"], () => {
+            if(this.time_scale < 100)
+                this.time_scale++;
+        });
+        this.key_triggered_button("Slow Down", ["y"], () => {
+            if(this.time_scale > 1)
+                this.time_scale--;
+        });
+
         // this.key_triggered_button("Increase World", [","], () => {
         //     if(this.world_size < 500)
         //         this.world_size+=50;
@@ -228,7 +238,7 @@ export class Background extends Scene {
         program_state.projection_transform = Mat4.perspective(
                 Math.PI / 4, context.width / context.height, 1, 2*this.world_size);
 
-        let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
+        let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000 * this.time_scale / 10;
 
         let model_transform = Mat4.identity();
 
