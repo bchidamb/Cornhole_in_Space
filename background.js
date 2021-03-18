@@ -336,7 +336,7 @@ export class Background extends Scene {
                 const merge_time = 0.75
                 let ct = this.t_released - merge_time;
                 if(ct > 0)
-                    program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct, y + k*dy*ct - 1/2*5*ct**2, z + k*dz*ct), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                    program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*5*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
                 else
                     program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
             }
