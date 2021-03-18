@@ -104,6 +104,7 @@ export class Background extends Scene {
             this.time_scale = 10;
             this.update_explanation();
         });
+        this.new_line();
         this.key_triggered_button("Target Left", ["a"], () => {
             if(this.state_id !== 2 && this.target[0] < 40)
                 this.target[0]++;
@@ -120,6 +121,10 @@ export class Background extends Scene {
             if(this.state_id !== 2 && this.target[1] > 0)
                 this.target[1]--;
         });
+        this.new_line();
+        this.live_string( box => box.textContent = "Target: (" + (-this.target[0]) + ", " + this.target[1] + ")");
+        this.new_line();
+
         this.key_triggered_button("Increase Scale", ["Shift", " "], () => {
             if(this.state_id !== 2 && this.scale < 20)
                 this.scale++;
@@ -128,6 +133,10 @@ export class Background extends Scene {
             if(this.state_id !== 2 && this.scale > 2)
                 this.scale--;
         });
+        this.new_line();
+        this.live_string( box => box.textContent = "Scale: " + this.scale);
+        this.new_line();
+
         this.key_triggered_button("Increase Gravity", ["g"], () => {
             if(this.state_id !== 2 && this.gravity < 30)
                 this.gravity++;
@@ -136,14 +145,21 @@ export class Background extends Scene {
             if(this.state_id !== 2 && this.gravity > 1)
                 this.gravity--;
         });
+        this.new_line();
+        this.live_string( box => box.textContent = "Gravity: " + this.gravity);
+        this.new_line();
+
         this.key_triggered_button("Speed up", ["t"], () => {
-            if(this.time_scale < 100)
+            if(this.time_scale < 50)
                 this.time_scale++;
         });
         this.key_triggered_button("Slow Down", ["y"], () => {
             if(this.time_scale > 1)
                 this.time_scale--;
         });
+        this.new_line();
+        this.live_string( box => box.textContent = "Speed: " + (this.time_scale/10.).toFixed(2) + "x");
+        this.new_line();
 
         // this.key_triggered_button("Increase World", [","], () => {
         //     if(this.world_size < 500)
@@ -153,6 +169,7 @@ export class Background extends Scene {
         //     if(this.world_size > 100)
         //         this.world_size-=50;
         // });
+
         this.key_triggered_button("Static Camera", ["0"], () => {
             this.camera_setting = 0;
         });
@@ -162,6 +179,9 @@ export class Background extends Scene {
         this.key_triggered_button("Follow Ball", ["2"], () => {
             this.camera_setting = 2;
         });
+        this.new_line();
+        this.live_string( box => box.textContent = "Camera Mode: " + (this.camera_setting));
+        this.new_line();
 
     }
 
@@ -342,7 +362,7 @@ export class Background extends Scene {
         {
             let base_miss_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
             let miss_transformation = Mat4.translation(2*scale * this.last_x, 0, 2*scale * this.last_z).times(base_miss_transformation);
-            this.shapes.square.draw(context, program_state, miss_transformation, this.materials.phong.override({color: color(0.6,0,0,1)}));
+            this.shapes.square.draw(context, program_state, miss_transformation, this.materials.phong.override({color: color(0.67,0,0,1)}));
         }
 
         // The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
