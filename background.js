@@ -87,6 +87,9 @@ export class Background extends Scene {
         this.target = [1,7];
         this.scale = 3;
         this.camera_setting = 0;
+        this.gravity = 5;
+        this.world_size = 200;
+
     }
 
     make_control_panel() {
@@ -96,6 +99,7 @@ export class Background extends Scene {
             this.state_id = 0;
             this.target = [1,7];
             this.scale = 3;
+            this.gravity = 5;
             this.camera_setting = 0;
             this.update_explanation();
         });
@@ -123,6 +127,22 @@ export class Background extends Scene {
             if(this.scale > 2)
                 this.scale--;
         });
+        this.key_triggered_button("Increase Gravity", ["g"], () => {
+            if(this.gravity < 30)
+                this.gravity++;
+        });
+        this.key_triggered_button("Decrease Gravity", ["h"], () => {
+            if(this.gravity > 1)
+                this.gravity--;
+        });
+        // this.key_triggered_button("Increase World", [","], () => {
+        //     if(this.world_size < 500)
+        //         this.world_size+=50;
+        // });
+        // this.key_triggered_button("Decrease World", ["."], () => {
+        //     if(this.world_size > 100)
+        //         this.world_size-=50;
+        // });
         this.key_triggered_button("Static Camera", ["0"], () => {
             this.camera_setting = 0;
         });
@@ -200,10 +220,13 @@ export class Background extends Scene {
 
         // Mouse to velocity scaling
         let k = 10;
+
+        // Gravity
+        let gravity = this.gravity;
         /////////////////////////////////////
 
         program_state.projection_transform = Mat4.perspective(
-                Math.PI / 4, context.width / context.height, 1, 400);
+                Math.PI / 4, context.width / context.height, 1, 2*this.world_size);
 
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
@@ -221,11 +244,9 @@ export class Background extends Scene {
 
         // Make light over the target
         const light_position = vec4(2*scale * target_x, 5, target_z*(2*scale) + scale, 1);
-        const light_position1 = vec4(2*scale * target_x + scale*Math.cos(t%(2*Math.PI)), 10, target_z*(2*scale) + scale + scale*Math.sin(t%(2*Math.PI)), 1);
-        const light_position2 = vec4(2*scale * target_x - scale*Math.cos(t%(2*Math.PI)), 2.5, target_z*(2*scale) + scale - scale*Math.sin(t%(2*Math.PI)), 1);
         program_state.lights = [new Light(light_position, target_color, 10**10),
-            new Light(light_position1, target_color, 10**10),
-            new Light(light_position2, target_color, 10**10)];
+            new Light(vec4(0,-1,0,0), color(0.2,0.2,0.2,0.2), 10**3)
+        ];
 
         // Calculate arrow vector
         if (this.mouse.anchor) {
@@ -261,7 +282,7 @@ export class Background extends Scene {
             dz = Math.cos(arrow_y_angle) * mouse_y;
             this.t_released += dt;
 
-            ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released);
+            ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released);
                             shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
         }
 
@@ -270,8 +291,11 @@ export class Background extends Scene {
         this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
 
         // Check if the ball landed
-        if ((y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) < (target_center[1] + 1) &&
-            (y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released) > (target_center[1] - 1)) {
+        if ((y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) < (target_center[1] + 1) &&
+            (y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) > (target_center[1] - 1)) {
+
+            this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
+            this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
 
             // Check if the ball hit target
             if ((z + k*dz*this.t_released) < (target_center[2] + scale) &&
@@ -283,6 +307,7 @@ export class Background extends Scene {
             }
             else {
                 this.win_condition = false;
+
             }
 
             this.state_id = 3;
@@ -292,13 +317,22 @@ export class Background extends Scene {
             this.update_explanation();
         }
         // Collision with background
-        else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*5*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 > 200**2)
+        else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 >= (this.world_size-1)**2)
         {
             this.win_condition = false;
+            this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
+            this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
             this.state_id = 3;
             this.t_released = 0;
             this.mouse.released = false;
             this.update_explanation();
+        }
+
+        if(this.win_condition === false && (this.last_x != target_x || this.last_z != target_z))
+        {
+            let base_miss_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
+            let miss_transformation = Mat4.translation(2*scale * this.last_x, 0, 2*scale * this.last_z).times(base_miss_transformation);
+            this.shapes.square.draw(context, program_state, miss_transformation, this.materials.phong.override({color: color(0.6,0,0,1)}));
         }
 
         // The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
@@ -309,7 +343,7 @@ export class Background extends Scene {
         this.shapes.circle.draw(context, program_state, Mat4.scale(1,2.0,1).times(target_transformation.times(Mat4.scale(1,1,1))), this.materials.ring);
 
         // Draw the stary sky
-        this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation((t/25)%(2*Math.PI), 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t%(2*Math.PI))**4)}));
+        this.shapes.sphere.draw(context, program_state, Mat4.scale(this.world_size,this.world_size,this.world_size).times(Mat4.rotation((t/25)%(2*Math.PI), 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t%(2*Math.PI))**4)}));
 
         // Draw the arrow
         // Correction if arrow points backwards
@@ -323,22 +357,22 @@ export class Background extends Scene {
         arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,sign*arrow_mag/2));
 
         if (this.state_id == 1)
-            this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
+            this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
 
         // Follow the ball if the ball is flying and the setting is on
         if(this.camera_setting !== 0 && this.state_id == 2)
         {
             if(this.camera_setting === 1) {
-                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released + 5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
             }
             else if(this.camera_setting === 2)
             {
                 const merge_time = 0.75
                 let ct = this.t_released - merge_time;
                 if(ct > 0)
-                    program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*5*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                    program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
                 else
-                    program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*5*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                    program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
             }
         }
         // Else place the camera in the default camera position
