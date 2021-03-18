@@ -104,35 +104,35 @@ export class Background extends Scene {
             this.update_explanation();
         });
         this.key_triggered_button("Target Left", ["a"], () => {
-            if(this.target[0] < 40)
+            if(this.state_id !== 2 && this.target[0] < 40)
                 this.target[0]++;
         });
         this.key_triggered_button("Target Right", ["d"], () => {
-            if(this.target[0] > -40)
+            if(this.state_id !== 2 && this.target[0] > -40)
                 this.target[0]--;
         });
         this.key_triggered_button("Target Forwards", ["w"], () => {
-            if(this.target[1] < 50)
+            if(this.state_id !== 2 && this.target[1] < 50)
                 this.target[1]++;
         });
         this.key_triggered_button("Target Backwards", ["s"], () => {
-            if(this.target[1] > 0)
+            if(this.state_id !== 2 && this.target[1] > 0)
                 this.target[1]--;
         });
         this.key_triggered_button("Increase Scale", ["Shift", " "], () => {
-            if(this.scale < 20)
+            if(this.state_id !== 2 && this.scale < 20)
                 this.scale++;
         });
         this.key_triggered_button("Decrease Scale", [" "], () => {
-            if(this.scale > 2)
+            if(this.state_id !== 2 && this.scale > 2)
                 this.scale--;
         });
         this.key_triggered_button("Increase Gravity", ["g"], () => {
-            if(this.gravity < 30)
+            if(this.state_id !== 2 && this.gravity < 30)
                 this.gravity++;
         });
         this.key_triggered_button("Decrease Gravity", ["h"], () => {
-            if(this.gravity > 1)
+            if(this.state_id !== 2 && this.gravity > 1)
                 this.gravity--;
         });
         // this.key_triggered_button("Increase World", [","], () => {
