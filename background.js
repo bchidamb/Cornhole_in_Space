@@ -24,7 +24,7 @@ class Arrow extends Shape {
 }
 
 // Use this not Grid!!!
-// Makes two seperate grids and allows the user to treat them as a single object 
+// Makes two seperate grids and allows the user to treat them as a single object
 // (Note: This is not a real shape!!!)
 class FullGrid {
     // Produces the full n_rows x n_cols grid
@@ -234,7 +234,17 @@ export class Background extends Scene {
             let mouse_x = (this.mouse.from_center[0] - this.mouse.anchor[0]) / pixel_scale;
             let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
             arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
-            arrow_xz_angle = mouse_x / (0.0001 + mouse_y);
+            let temp_z = Math.cos(arrow_y_angle) * mouse_y;
+            if(temp_z == 0)
+            {
+                if(mouse_x > 0)
+                    arrow_xz_angle = Math.PI/2;
+                else
+                    arrow_xz_angle = -Math.PI/2;
+            }
+            else
+                arrow_xz_angle = Math.atan(mouse_x/temp_z);
+
         }
 
         let ball_transform = Mat4.translation(x, y, z);
@@ -302,11 +312,15 @@ export class Background extends Scene {
         this.shapes.sphere.draw(context, program_state, Mat4.scale(200,200,200).times(Mat4.rotation((t/25)%(2*Math.PI), 0,1,0.25)), this.materials.texture.override({ambient : 1-0.5*(Math.sin(t%(2*Math.PI))**4)}));
 
         // Draw the arrow
+        // Correction if arrow points backwards
+        let sign = +1;
+        if(this.mouse.from_center && this.mouse.anchor && (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale * Math.sin(arrow_y_angle) < 0)
+            sign = -1;
         let arrow_transformation = Mat4.identity();
         arrow_transformation = arrow_transformation.times(Mat4.translation(x, y, z));
         arrow_transformation = arrow_transformation.times(Mat4.rotation(-arrow_y_angle,1,0,0));
         arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
-        arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,arrow_mag/2));
+        arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,sign*arrow_mag/2));
 
         if (this.state_id == 1)
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1,0,0,1)}));
