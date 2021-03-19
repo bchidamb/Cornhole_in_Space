@@ -399,7 +399,7 @@ export class Background extends Scene {
         }
 
         // Color where the ball last hit
-        if(this.win_condition !== undefined && (this.last_x != target_x || this.last_z != target_z))
+        if(this.win_condition !== undefined && this.last_x !== undefined && this.last_z !== undefined && (this.last_x != target_x || this.last_z != target_z) && this.last_z >= 0 && this.last_z < this.nrows && this.last_x >= -this.ncols/2 && this.last_x <= this.ncols/2)
         {
             let hit_color = color(0.67,0,0,1);
             if(this.win_condition === true)
