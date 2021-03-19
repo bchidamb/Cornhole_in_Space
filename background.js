@@ -51,13 +51,16 @@ export class Background extends Scene {
     constructor() {
         super();
 
+        this.nrows = 50;
+        this.ncols = 81; // This value should be odd
+
         this.shapes = {
             // Declares a Grid of 25 rows and 30 columns (note: default square size is 2x2)
             square: new defs.Square(),
             sphere: new defs.Subdivision_Sphere(5),
 
             // NOTE: we are assuming that there are an ODD number of columns
-            full: new FullGrid(50, 81, color(1,1,1,1), color(0,0,0,1)),
+            full: new FullGrid(this.nrows, this.ncols, color(1,1,1,1), color(0,0,0,1)),
             arrow: new Arrow(),
             circle: new defs.Regular_2D_Polygon(25,25),
             // axis: new defs.Axis_Arrows()
@@ -91,7 +94,39 @@ export class Background extends Scene {
         this.world_size = 200;
         this.time_scale = 10;
     }
+    rand_target()
+    {
+        let visible = false;
+        do {
+            visible = true;
 
+            let max_dist = (this.world_size * 3 / 4) / (2*this.scale) - 1; // make sure that it is not too far
+            let x_max = Math.min(max_dist, this.ncols/2);
+            this.target[0] = Math.floor(x_max*Math.random());
+            if(Math.random() > 0.5)
+                this.target[0] = -this.target[0];
+            let z_max = Math.min(max_dist, this.nrows);
+            let z_min = Math.abs(this.target[0]);
+
+            //For a rough visibility make the z value be greater than |x| value
+            this.target[1] = z_min + Math.floor((z_max-z_min)*Math.random());
+            let new_x = 2*this.scale * this.target[0];
+            let new_z = 2*this.scale * this.target[1] + this.scale;
+
+            //check if beyond the stars
+            if(new_x**2 + new_z**2 >= this.world_size**2)
+            {
+                visible = false;
+            }
+
+            // //rough visibility check
+            // if(Math.abs(new_x) <= Math.abs(new_z))
+            // {
+            //     visible = false;
+            // }
+        } while (!visible);
+
+    }
     make_control_panel() {
         this.key_triggered_button("Reset", ["r"], () => {
             this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
@@ -102,8 +137,12 @@ export class Background extends Scene {
             this.gravity = 5;
             this.camera_setting = 0;
             this.time_scale = 10;
+            this.world_size = 200;
             this.update_explanation();
         });
+        this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
+        this.new_line();
+        this.live_string( box => box.textContent = "Target Coordinates: (" + (-this.target[0]) + ", " + (this.target[1]) + ")");
         this.new_line();
         this.key_triggered_button("Target Left", ["a"], () => {
             if(this.state_id !== 2 && this.target[0] < 40)
@@ -122,54 +161,53 @@ export class Background extends Scene {
                 this.target[1]--;
         });
         this.new_line();
-        this.live_string( box => box.textContent = "Target: (" + (-this.target[0]) + ", " + this.target[1] + ")");
-        this.new_line();
 
-        this.key_triggered_button("Increase Scale", ["Shift", " "], () => {
+        this.live_string( box => box.textContent = "Tile width: " + this.scale);
+        this.new_line();
+        this.key_triggered_button("Increase Tile Size", ["Shift", " "], () => {
             if(this.state_id !== 2 && this.scale < 20)
                 this.scale++;
         });
-        this.key_triggered_button("Decrease Scale", [" "], () => {
+        this.key_triggered_button("Decrease Tile Size", [" "], () => {
             if(this.state_id !== 2 && this.scale > 2)
                 this.scale--;
         });
         this.new_line();
-        this.live_string( box => box.textContent = "Scale: " + this.scale);
+        this.live_string( box => box.textContent = "Gravity: " + this.gravity);
         this.new_line();
-
         this.key_triggered_button("Increase Gravity", ["g"], () => {
             if(this.state_id !== 2 && this.gravity < 30)
                 this.gravity++;
-        });
+        }, "black");
         this.key_triggered_button("Decrease Gravity", ["h"], () => {
             if(this.state_id !== 2 && this.gravity > 1)
                 this.gravity--;
-        });
-        this.new_line();
-        this.live_string( box => box.textContent = "Gravity: " + this.gravity);
-        this.new_line();
-
-        this.key_triggered_button("Speed up", ["t"], () => {
-            if(this.time_scale < 50)
-                this.time_scale++;
-        });
-        this.key_triggered_button("Slow Down", ["y"], () => {
-            if(this.time_scale > 1)
-                this.time_scale--;
-        });
+        }, "grey");
         this.new_line();
         this.live_string( box => box.textContent = "Speed: " + (this.time_scale/10.).toFixed(2) + "x");
         this.new_line();
-
-        // this.key_triggered_button("Increase World", [","], () => {
-        //     if(this.world_size < 500)
-        //         this.world_size+=50;
-        // });
-        // this.key_triggered_button("Decrease World", ["."], () => {
-        //     if(this.world_size > 100)
-        //         this.world_size-=50;
-        // });
-
+        this.key_triggered_button("Speed up", ["t"], () => {
+            if(this.time_scale < 80)
+                this.time_scale++;
+        }, "green");
+        this.key_triggered_button("Slow Down", ["y"], () => {
+            if(this.time_scale > 0)
+                this.time_scale--;
+        }, "red");
+        this.new_line();
+        this.live_string( box => box.textContent = "World Size: " + (this.world_size));
+        this.new_line();
+        this.key_triggered_button("Increase World", [","], () => {
+            if(this.world_size < 500)
+                this.world_size+=50;
+        });
+        this.key_triggered_button("Decrease World", ["."], () => {
+            if(this.world_size > 100)
+                this.world_size-=50;
+        });
+        this.new_line();
+        this.live_string( box => box.textContent = "Camera Mode: " + (this.camera_setting));
+        this.new_line();
         this.key_triggered_button("Static Camera", ["0"], () => {
             this.camera_setting = 0;
         });
@@ -179,8 +217,6 @@ export class Background extends Scene {
         this.key_triggered_button("Follow Ball", ["2"], () => {
             this.camera_setting = 2;
         });
-        this.new_line();
-        this.live_string( box => box.textContent = "Camera Mode: " + (this.camera_setting));
         this.new_line();
 
     }
@@ -334,6 +370,7 @@ export class Background extends Scene {
                 (x + k*dx*this.t_released) > (target_center[0] - scale))
             {
                 this.win_condition = true;
+                this.rand_target();
             }
             else {
                 this.win_condition = false;
@@ -358,11 +395,18 @@ export class Background extends Scene {
             this.update_explanation();
         }
 
-        if(this.win_condition === false && (this.last_x != target_x || this.last_z != target_z))
+        // Color where the ball last hit
+        if(this.win_condition !== undefined && (this.last_x != target_x || this.last_z != target_z))
         {
-            let base_miss_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
-            let miss_transformation = Mat4.translation(2*scale * this.last_x, 0, 2*scale * this.last_z).times(base_miss_transformation);
-            this.shapes.square.draw(context, program_state, miss_transformation, this.materials.phong.override({color: color(0.67,0,0,1)}));
+            let hit_color = color(0.67,0,0,1);
+            if(this.win_condition === true)
+            {
+                hit_color = color(0,0.67,0,1);
+            }
+
+            let base_hit_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
+            let hit_transformation = Mat4.translation(2*scale * this.last_x, 0, 2*scale * this.last_z).times(base_hit_transformation);
+            this.shapes.square.draw(context, program_state, hit_transformation, this.materials.phong.override({color: hit_color}));
         }
 
         // The grid is on the x/z plane (y=0) with the central square at (x,z) coordinates x: [-scale, scale] X z: [0, 2*scale]
