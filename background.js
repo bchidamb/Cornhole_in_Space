@@ -114,7 +114,7 @@ export class Background extends Scene {
             if(Math.random() > 0.5)
                 this.target[0] = -this.target[0];
             let z_max = Math.min(max_dist, this.nrows);
-            let z_min = Math.abs(Math.ceil(this.target[0]*1.25));
+            let z_min = Math.abs(Math.ceil(this.target[0]*4.0/3.0));
 
             //For a rough visibility make the z value be greater than |x| value
             this.target[1] = z_min + Math.floor((z_max-z_min)*Math.random());
@@ -199,7 +199,7 @@ export class Background extends Scene {
         this.live_string( box => box.textContent = "World Size: " + (this.world_size));
         this.new_line();
         this.key_triggered_button("Increase World", [","], () => {
-            if(this.world_size < 500)
+            if(this.world_size < 750)
                 this.world_size+=50;
         });
         this.key_triggered_button("Decrease World", ["."], () => {
