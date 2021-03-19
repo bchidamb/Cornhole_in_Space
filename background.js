@@ -85,14 +85,22 @@ export class Background extends Scene {
         // REMEMBER so that the sphere is moderately oriented
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
         this.controls_setup = false;
-
+        this.reset();
+    }
+    reset()
+    {
+        this.randomize = true;
+        this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
+        this.t_released = 0;
         this.state_id = 0;
-        this.target = [1,7];
-        this.scale = 3;
-        this.camera_setting = 0;
+        this.target = [1,4];
+        this.scale = 4;
         this.gravity = 5;
-        this.world_size = 200;
+        this.camera_setting = 0;
         this.time_scale = 10;
+        this.world_size = 250;
+        if(this.controls_setup)
+            this.update_explanation();
     }
     rand_target()
     {
@@ -100,13 +108,13 @@ export class Background extends Scene {
         do {
             visible = true;
 
-            let max_dist = (this.world_size * 3 / 4) / (2*this.scale) - 1; // make sure that it is not too far
+            let max_dist = (this.world_size / 2) / (2*this.scale) - 1; // make sure that it is not too far
             let x_max = Math.min(max_dist, this.ncols/2);
             this.target[0] = Math.floor(x_max*Math.random());
             if(Math.random() > 0.5)
                 this.target[0] = -this.target[0];
             let z_max = Math.min(max_dist, this.nrows);
-            let z_min = Math.abs(this.target[0]);
+            let z_min = Math.abs(Math.ceil(this.target[0]*1.25));
 
             //For a rough visibility make the z value be greater than |x| value
             this.target[1] = z_min + Math.floor((z_max-z_min)*Math.random());
@@ -128,19 +136,12 @@ export class Background extends Scene {
 
     }
     make_control_panel() {
-        this.key_triggered_button("Reset", ["r"], () => {
-            this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
-            this.t_released = 0;
-            this.state_id = 0;
-            this.target = [1,7];
-            this.scale = 3;
-            this.gravity = 5;
-            this.camera_setting = 0;
-            this.time_scale = 10;
-            this.world_size = 200;
-            this.update_explanation();
-        });
+        this.key_triggered_button("Reset", ["r"], this.reset);
         this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
+        this.key_triggered_button("Randomization", ["q"], () => {
+            this.randomize = !this.randomize;
+        });
+        this.live_string( box => box.textContent = "Automatic Randomization: " + (this.randomize ? "On": "Off"));
         this.new_line();
         this.live_string( box => box.textContent = "Target Coordinates: (" + (-this.target[0]) + ", " + (this.target[1]) + ")");
         this.new_line();
@@ -164,12 +165,12 @@ export class Background extends Scene {
 
         this.live_string( box => box.textContent = "Tile width: " + this.scale);
         this.new_line();
-        this.key_triggered_button("Increase Tile Size", ["Shift", " "], () => {
+        this.key_triggered_button("Increase Tile Size", [" "], () => {
             if(this.state_id !== 2 && this.scale < 20)
                 this.scale++;
         });
-        this.key_triggered_button("Decrease Tile Size", [" "], () => {
-            if(this.state_id !== 2 && this.scale > 2)
+        this.key_triggered_button("Decrease Tile Size", ["Shift", " "], () => {
+            if(this.state_id !== 2 && this.scale > 1)
                 this.scale--;
         });
         this.new_line();
@@ -370,7 +371,8 @@ export class Background extends Scene {
                 (x + k*dx*this.t_released) > (target_center[0] - scale))
             {
                 this.win_condition = true;
-                this.rand_target();
+                if(this.randomize)
+                    this.rand_target();
             }
             else {
                 this.win_condition = false;
@@ -437,7 +439,7 @@ export class Background extends Scene {
         if(this.camera_setting !== 0 && this.state_id == 2)
         {
             if(this.camera_setting === 1) {
-                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 2.5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
             }
             else if(this.camera_setting === 2)
             {
