@@ -471,11 +471,11 @@ export class Background extends Scene {
         }
         else if (this.camera_setting === 5)
         {
-            program_state.set_camera(Mat4.look_at(vec3(+10, 20, -15), vec3(+20, 3, 30), vec3(0, 1, 0)));
+            program_state.set_camera(Mat4.look_at(vec3(+10, 25, -15), vec3(+20, 3, 30), vec3(0, 1, 0)));
         }
         else if (this.camera_setting === 6)
         {
-            program_state.set_camera(Mat4.look_at(vec3(-10, 20, -15), vec3(-20, 3, 30), vec3(0, 1, 0)));
+            program_state.set_camera(Mat4.look_at(vec3(-10, 25, -15), vec3(-20, 3, 30), vec3(0, 1, 0)));
         }
         // Else place the camera in the default camera position
         else{
