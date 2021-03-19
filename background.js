@@ -219,10 +219,16 @@ export class Background extends Scene {
         this.key_triggered_button("Static Camera: High", ["2"], () => {
             this.camera_setting = 2;
         });
-        this.key_triggered_button("Watch Ball", ["3"], () => {
+        this.key_triggered_button("Static Camera: Left", ["3"], () => {
+            this.camera_setting = 5;
+        });
+        this.key_triggered_button("Static Camera: Right", ["4"], () => {
+            this.camera_setting = 6;
+        });
+        this.key_triggered_button("Watch Ball", ["5"], () => {
             this.camera_setting = 3;
         });
-        this.key_triggered_button("Follow Ball", ["4"], () => {
+        this.key_triggered_button("Follow Ball", ["6"], () => {
             this.camera_setting = 4;
         });
         this.new_line();
@@ -462,6 +468,14 @@ export class Background extends Scene {
         else if (this.camera_setting === 2)
         {
             program_state.set_camera(Mat4.look_at(vec3(0, 50, -30), vec3(0, 0, 50), vec3(0, 1, 0)));
+        }
+        else if (this.camera_setting === 5)
+        {
+            program_state.set_camera(Mat4.look_at(vec3(+10, 20, -15), vec3(+20, 3, 30), vec3(0, 1, 0)));
+        }
+        else if (this.camera_setting === 6)
+        {
+            program_state.set_camera(Mat4.look_at(vec3(-10, 20, -15), vec3(-20, 3, 30), vec3(0, 1, 0)));
         }
         // Else place the camera in the default camera position
         else{
