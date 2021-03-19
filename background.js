@@ -99,6 +99,7 @@ export class Background extends Scene {
         this.camera_setting = 0;
         this.time_scale = 10;
         this.world_size = 250;
+        this.win_condition = undefined;
         if(this.controls_setup)
             this.update_explanation();
     }
