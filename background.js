@@ -365,8 +365,7 @@ export class Background extends Scene {
         this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
 
         // Check if the ball landed
-        if ((y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) < (target_center[1] + 1) &&
-            (y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) > (target_center[1] - 1)) {
+        if ((y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) < (target_center[1] + 1)){
 
             this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
             this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
