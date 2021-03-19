@@ -97,6 +97,7 @@ export class Background extends Scene {
         this.scale = 4;
         this.gravity = 5;
         this.camera_setting = 0;
+        this.camera_movement = 0;
         this.time_scale = 10;
         this.world_size = 250;
         this.win_condition = undefined;
@@ -208,28 +209,54 @@ export class Background extends Scene {
                 this.world_size-=50;
         });
         this.new_line();
-        this.live_string( box => box.textContent = "Camera Mode: " + (this.camera_setting));
+        this.live_string( box => {
+            box.textContent = "Camera Mode: ";
+            if(this.camera_movement === 0) {
+                box.textContent += "Static ";
+            }
+            else if (this.camera_movement === 1) {
+                box.textContent += "Watch ";
+            }
+            else if (this.camera_movement === 2) {
+                box.textContent += "Follow ";
+            }
+
+            if (this.camera_setting === 0)
+                box.textContent += "Standard";
+            else if (this.camera_setting === 1)
+                box.textContent += "Low";
+            else if (this.camera_setting === 2)
+                box.textContent += "High";
+            else if (this.camera_setting === 3)
+                box.textContent += "Left";
+            else if (this.camera_setting === 4)
+                box.textContent += "Right";
+        });
         this.new_line();
-        this.key_triggered_button("Static Camera: Standard", ["0"], () => {
+        this.key_triggered_button("Camera: Standard", ["0"], () => {
             this.camera_setting = 0;
         });
-        this.key_triggered_button("Static Camera: Low", ["1"], () => {
+        this.key_triggered_button("Camera: Low", ["1"], () => {
             this.camera_setting = 1;
         });
-        this.key_triggered_button("Static Camera: High", ["2"], () => {
+        this.key_triggered_button("Camera: High", ["2"], () => {
             this.camera_setting = 2;
         });
-        this.key_triggered_button("Static Camera: Left", ["3"], () => {
-            this.camera_setting = 5;
-        });
-        this.key_triggered_button("Static Camera: Right", ["4"], () => {
-            this.camera_setting = 6;
-        });
-        this.key_triggered_button("Watch Ball", ["5"], () => {
+        this.key_triggered_button("Camera: Left", ["3"], () => {
             this.camera_setting = 3;
         });
-        this.key_triggered_button("Follow Ball", ["6"], () => {
+        this.key_triggered_button("Camera: Right", ["4"], () => {
             this.camera_setting = 4;
+        });
+        this.new_line();
+        this.key_triggered_button("Static Camera", ["5"], () => {
+            this.camera_movement = 0;
+        });
+        this.key_triggered_button("Watch Ball", ["6"], () => {
+            this.camera_movement = 1;
+        });
+        this.key_triggered_button("Follow Ball", ["7"], () => {
+            this.camera_movement = 2;
         });
         this.new_line();
 
@@ -447,12 +474,14 @@ export class Background extends Scene {
         if (this.state_id == 1)
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
 
-        // Follow the ball if the ball is flying and the setting is on
 
-        if(this.camera_setting === 3 && this.state_id === 2) {
+        // Camera Setting and Movement
+        // Watch the ball (if the ball is flying)
+        if(this.camera_movement === 1 && this.state_id === 2) {
             program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 2.5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
         }
-        else if(this.camera_setting === 4 && this.state_id === 2)
+        // Follow the Ball (if the ball is flying)
+        else if(this.camera_movement === 2 && this.state_id === 2)
         {
             const merge_time = 0.75
             let ct = this.t_released - merge_time;
@@ -461,23 +490,27 @@ export class Background extends Scene {
             else
                 program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
         }
+        // High view
         else if (this.camera_setting === 1)
         {
             program_state.set_camera(Mat4.look_at(vec3(0, 15, -20), vec3(0, 0, 50), vec3(0, 1, 0)));
         }
+        // Low view
         else if (this.camera_setting === 2)
         {
             program_state.set_camera(Mat4.look_at(vec3(0, 50, -30), vec3(0, 0, 50), vec3(0, 1, 0)));
         }
-        else if (this.camera_setting === 5)
+        // Left view
+        else if (this.camera_setting === 3)
         {
             program_state.set_camera(Mat4.look_at(vec3(+10, 25, -15), vec3(+20, 3, 30), vec3(0, 1, 0)));
         }
-        else if (this.camera_setting === 6)
+        // Right view
+        else if (this.camera_setting === 4)
         {
             program_state.set_camera(Mat4.look_at(vec3(-10, 25, -15), vec3(-20, 3, 30), vec3(0, 1, 0)));
         }
-        // Else place the camera in the default camera position
+        // Else place the camera in the default camera position (Standard view)
         else{
             program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
         }
