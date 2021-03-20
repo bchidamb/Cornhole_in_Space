@@ -194,15 +194,15 @@ export class Background extends Scene {
         this.live_string( box => box.textContent = (this.randomize ? "On": "Off"));
         this.new_line();
         this.key_triggered_button("Target Left", ["a"], () => {
-            if(this.state_id !== 2 && this.target[0] < 40)
+            if(this.state_id !== 2 && this.target[0] < this.ncols/2 - 1)
                 this.target[0]++;
         });
         this.key_triggered_button("Target Right", ["d"], () => {
-            if(this.state_id !== 2 && this.target[0] > -40)
+            if(this.state_id !== 2 && this.target[0] > -this.ncols/2 + 1)
                 this.target[0]--;
         });
         this.key_triggered_button("Target Forwards", ["w"], () => {
-            if(this.state_id !== 2 && this.target[1] < 50)
+            if(this.state_id !== 2 && this.target[1] < this.nrows - 1)
                 this.target[1]++;
         });
         this.key_triggered_button("Target Backwards", ["s"], () => {
