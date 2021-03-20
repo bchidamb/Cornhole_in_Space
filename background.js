@@ -86,6 +86,14 @@ export class Background extends Scene {
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
         this.controls_setup = false;
         this.reset();
+        // Audio tutorial: https://developer.mozilla.org/en-US/docs/Web/API/HTMLAudioElement
+        // Sound from https://www.freesoundslibrary.com/game-win-sound-effect/
+        this.winAudio = new Audio("./assets/game-victory-sound-effect.mp3");
+        // Sound from https://www.freesoundslibrary.com/game-fail-sound-effect/
+        this.failAudio = new Audio("./assets/Game-fail-sound-effect.mp3");
+        // Sound from https://www.freesoundslibrary.com/impact-sound-effect/
+        // Sound from https://www.freesoundslibrary.com/sound-effect-toaster-pop-up/
+        this.launchAudio = new Audio("./assets/Impact-sound-effect.mp3");
     }
     reset()
     {
@@ -190,7 +198,7 @@ export class Background extends Scene {
         this.live_string( box => box.textContent = "Speed: " + (this.time_scale/10.).toFixed(2) + "x");
         this.new_line();
         this.key_triggered_button("Speed up", ["t"], () => {
-            if(this.time_scale < 80)
+            if(this.time_scale < 50)
                 this.time_scale++;
         }, "green");
         this.key_triggered_button("Slow Down", ["y"], () => {
@@ -277,6 +285,7 @@ export class Background extends Scene {
             this.mouse.from_center.scale_by(0);
             this.t_released = 0;
             this.mouse.released = true;
+            this.launchAudio.play();
         });
         canvas  .addEventListener( "mousedown", e => { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; } );
         canvas  .addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
@@ -412,10 +421,11 @@ export class Background extends Scene {
                 this.win_condition = true;
                 if(this.randomize)
                     this.rand_target();
+                this.winAudio.play();
             }
             else {
                 this.win_condition = false;
-
+                this.failAudio.play();
             }
 
             this.state_id = 3;
@@ -428,12 +438,13 @@ export class Background extends Scene {
         else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 >= (this.world_size-1)**2)
         {
             this.win_condition = false;
-            this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
-            this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
+            this.last_x = undefined; //Math.round( (x + k*dx*this.t_released) / (2*scale));
+            this.last_z = undefined; //Math.floor( (z + k*dz*this.t_released) / (2*scale));
             this.state_id = 3;
             this.t_released = 0;
             this.mouse.released = false;
             this.update_explanation();
+            this.failAudio.play();
         }
 
         // Color where the ball last hit
