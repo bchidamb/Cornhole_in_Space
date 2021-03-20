@@ -184,6 +184,18 @@ export class Background extends Scene {
                 this.scale--;
         });
         this.new_line();
+        this.live_string( box => box.textContent = "World Size: " + (this.world_size));
+        this.new_line();
+        this.key_triggered_button("Increase World", [","], () => {
+            if(this.state_id !== 2 && this.world_size < 750)
+                this.world_size+=50;
+        });
+        this.key_triggered_button("Decrease World", ["."], () => {
+            if(this.state_id !== 2 && this.world_size > 100)
+                this.world_size-=50;
+        });
+
+        this.new_line();
         this.live_string( box => box.textContent = "Gravity: " + this.gravity);
         this.new_line();
         this.key_triggered_button("Increase Gravity", ["g"], () => {
@@ -205,17 +217,6 @@ export class Background extends Scene {
             if(this.time_scale > 0)
                 this.time_scale--;
         }, "red");
-        this.new_line();
-        this.live_string( box => box.textContent = "World Size: " + (this.world_size));
-        this.new_line();
-        this.key_triggered_button("Increase World", [","], () => {
-            if(this.world_size < 750)
-                this.world_size+=50;
-        });
-        this.key_triggered_button("Decrease World", ["."], () => {
-            if(this.world_size > 100)
-                this.world_size-=50;
-        });
         this.new_line();
         this.live_string( box => {
             box.textContent = "Camera Mode: ";
@@ -387,6 +388,10 @@ export class Background extends Scene {
         let ball_transform = Mat4.translation(x, y, z);
         let shadow_transform = Mat4.translation(x, 0.1, z);
 
+        let ball_x = x;
+        let ball_y = y;
+        let ball_z = z;
+
         // Calculate ball velocity from mouse coords
         if (this.mouse.released) {
             this.state_id = 2;
@@ -398,25 +403,37 @@ export class Background extends Scene {
             dz = Math.cos(arrow_y_angle) * mouse_y;
             this.t_released += dt;
 
-            ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released);
-                            shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
+            // Calculate the ball's new position
+            ball_x = x + k*dx*this.t_released;
+            ball_y = y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released;
+            ball_z = z + k*dz*this.t_released;
+
+            ball_transform = Mat4.translation(ball_x, ball_y , ball_z);
+            shadow_transform = Mat4.translation(ball_x, 0.1, ball_z);
         }
 
-        // Draw ball
+        // Draw ball (if on the grid)
         this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
-        this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.75)}));
+        if( ball_z >= 0 && ball_z <= this.nrows * scale * 2
+            && ball_x >= -this.ncols*scale && ball_x <= this.ncols*scale)
+        {
+            this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.75)}));
+        }
 
-        // Check if the ball landed
-        if ((y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) < (target_center[1] + 1)){
 
-            this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
-            this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
+        // Check if the ball landed (on the grid)
+        if ( ball_y < (target_center[1] + 1) // Assume ball's radius is 1
+            && ball_z >= 0 && ball_z <= this.nrows * scale * 2
+            && ball_x >= -this.ncols*scale && ball_x <= this.ncols*scale ){
+
+            this.last_x = Math.round( ball_x / (2*scale));
+            this.last_z = Math.floor( ball_z / (2*scale));
 
             // Check if the ball hit target
-            if ((z + k*dz*this.t_released) < (target_center[2] + scale) &&
-                (z + k*dz*this.t_released) > (target_center[2] - scale) &&
-                (x + k*dx*this.t_released) < (target_center[0] + scale) &&
-                (x + k*dx*this.t_released) > (target_center[0] - scale))
+            if ((ball_z) < (target_center[2] + scale) &&
+                (ball_z) > (target_center[2] - scale) &&
+                (ball_x) < (target_center[0] + scale) &&
+                (ball_x) > (target_center[0] - scale))
             {
                 this.win_condition = true;
                 if(this.randomize)
@@ -435,11 +452,11 @@ export class Background extends Scene {
             this.update_explanation();
         }
         // Collision with background
-        else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 >= (this.world_size-1)**2)
+        else if ((ball_z)**2 +(ball_y)**2 +  (ball_x)**2 >= (this.world_size-1)**2)
         {
             this.win_condition = false;
-            this.last_x = undefined; //Math.round( (x + k*dx*this.t_released) / (2*scale));
-            this.last_z = undefined; //Math.floor( (z + k*dz*this.t_released) / (2*scale));
+            this.last_x = undefined; //Math.round( (ball_x) / (2*scale));
+            this.last_z = undefined; //Math.floor( (ball_z) / (2*scale));
             this.state_id = 3;
             this.t_released = 0;
             this.mouse.released = false;
@@ -496,7 +513,7 @@ export class Background extends Scene {
         // Camera Setting and Movement
         // Watch the ball (if the ball is flying)
         if(this.camera_movement === 1 && this.state_id === 2) {
-            program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 2.5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+            program_state.set_camera(Mat4.look_at(vec3(ball_x, ball_y + 2.5, ball_z - 20), vec3(ball_x, ball_y , ball_z), vec3(0, 1, 0)));
         }
         // Follow the Ball (if the ball is flying)
         else if(this.camera_movement === 2 && this.state_id === 2)
@@ -504,9 +521,9 @@ export class Background extends Scene {
             const merge_time = 0.75
             let ct = this.t_released - merge_time;
             if(ct > 0)
-                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(ball_x, ball_y , ball_z), vec3(0, 1, 0)));
             else
-                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(ball_x, ball_y , ball_z), vec3(0, 1, 0)));
         }
         // High view
         else if (this.camera_setting === 1)
