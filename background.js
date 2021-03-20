@@ -74,6 +74,11 @@ export class Background extends Scene {
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
         this.controls_setup = false;
         this.reset();
+
+        // Audio files
+        this.winAudio = new Audio("./assets/game-victory-sound-effect.mp3");
+        this.failAudio = new Audio("./assets/Game-fail-sound-effect.mp3");
+        this.launchAudio = new Audio("./assets/Impact-sound-effect.mp3");
     }
 
     // Reset game state to default state
@@ -89,6 +94,8 @@ export class Background extends Scene {
         this.camera_movement = 0;
         this.time_scale = 10;
         this.world_size = 250;
+        this.hits = 0;
+        this.misses = 0;
         this.win_condition = undefined;
         if(this.controls_setup)
             this.update_explanation();
@@ -121,76 +128,18 @@ export class Background extends Scene {
     }
 
     make_control_panel() {
-        this.key_triggered_button("Reset", ["r"], this.reset);
-        this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
-        this.key_triggered_button("Randomization", ["q"], () => {
-            this.randomize = !this.randomize;
-        });
-        this.live_string( box => box.textContent = "Automatic Randomization: " + (this.randomize ? "On": "Off"));
+        this.live_string( box => box.textContent = "Total Hits: " + (this.hits) + ", Total Misses: "+(this.misses)
+            + ((this.misses + this.hits !== 0) ? ", Accuracy: " + (this.hits*100.0/(this.misses + this.hits)).toFixed(2) + "%": ""));
         this.new_line();
         this.live_string( box => box.textContent = "Target Coordinates: (" + (-this.target[0]) + ", " + (this.target[1]) + ")");
         this.new_line();
-        this.key_triggered_button("Target Left", ["a"], () => {
-            if(this.state_id !== 2 && this.target[0] < 40)
-                this.target[0]++;
-        });
-        this.key_triggered_button("Target Right", ["d"], () => {
-            if(this.state_id !== 2 && this.target[0] > -40)
-                this.target[0]--;
-        });
-        this.key_triggered_button("Target Forwards", ["w"], () => {
-            if(this.state_id !== 2 && this.target[1] < 50)
-                this.target[1]++;
-        });
-        this.key_triggered_button("Target Backwards", ["s"], () => {
-            if(this.state_id !== 2 && this.target[1] > 0)
-                this.target[1]--;
-        });
-        this.new_line();
-
-        this.live_string( box => box.textContent = "Tile width: " + this.scale);
-        this.new_line();
-        this.key_triggered_button("Increase Tile Size", [" "], () => {
-            if(this.state_id !== 2 && this.scale < 20)
-                this.scale++;
-        });
-        this.key_triggered_button("Decrease Tile Size", ["Shift", " "], () => {
-            if(this.state_id !== 2 && this.scale > 1)
-                this.scale--;
-        });
-        this.new_line();
-        this.live_string( box => box.textContent = "Gravity: " + this.gravity);
-        this.new_line();
-        this.key_triggered_button("Increase Gravity", ["g"], () => {
-            if(this.state_id !== 2 && this.gravity < 30)
-                this.gravity++;
-        }, "black");
-        this.key_triggered_button("Decrease Gravity", ["h"], () => {
-            if(this.state_id !== 2 && this.gravity > 1)
-                this.gravity--;
-        }, "grey");
-        this.new_line();
-        this.live_string( box => box.textContent = "Speed: " + (this.time_scale/10.).toFixed(2) + "x");
-        this.new_line();
-        this.key_triggered_button("Speed up", ["t"], () => {
-            if(this.time_scale < 80)
-                this.time_scale++;
-        }, "green");
-        this.key_triggered_button("Slow Down", ["y"], () => {
-            if(this.time_scale > 0)
-                this.time_scale--;
-        }, "red");
+        this.live_string( box => box.textContent = "Tile Size: " + this.scale);
         this.new_line();
         this.live_string( box => box.textContent = "World Size: " + (this.world_size));
         this.new_line();
-        this.key_triggered_button("Increase World", [","], () => {
-            if(this.world_size < 750)
-                this.world_size+=50;
-        });
-        this.key_triggered_button("Decrease World", ["."], () => {
-            if(this.world_size > 100)
-                this.world_size-=50;
-        });
+        this.live_string( box => box.textContent = "Gravity: " + this.gravity);
+        this.new_line();
+        this.live_string( box => box.textContent = "Speed: " + (this.time_scale/10.).toFixed(2) + "x");
         this.new_line();
         this.live_string( box => {
             box.textContent = "Camera Mode: ";
@@ -215,6 +164,81 @@ export class Background extends Scene {
             else if (this.camera_setting === 4)
                 box.textContent += "Right";
         });
+        this.new_line();
+
+        this.key_triggered_button("Reset", ["r"], this.reset);
+        this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
+        this.key_triggered_button("Automatic Randomization", ["q"], () => {
+            this.randomize = !this.randomize;
+        });
+        this.live_string( box => box.textContent = (this.randomize ? "On": "Off"));
+        this.new_line();
+        this.key_triggered_button("Target Left", ["a"], () => {
+            if(this.state_id !== 2 && this.target[0] < this.ncols/2 - 1)
+                this.target[0]++;
+        });
+        this.key_triggered_button("Target Right", ["d"], () => {
+            if(this.state_id !== 2 && this.target[0] > -this.ncols/2 + 1)
+                this.target[0]--;
+        });
+        this.key_triggered_button("Target Forwards", ["w"], () => {
+            if(this.state_id !== 2 && this.target[1] < this.nrows - 1)
+                this.target[1]++;
+        });
+        this.key_triggered_button("Target Backwards", ["s"], () => {
+            if(this.state_id !== 2 && this.target[1] > 0)
+                this.target[1]--;
+        });
+        this.new_line();
+        this.key_triggered_button("Increase Tile Size", [" "], () => {
+            if(this.state_id !== 2 && this.scale < 20)
+            {
+                this.scale++;
+                let target_coordinates = vec3(2*this.scale * this.target[0], 2*this.scale * this.target[1] + this.scale);
+                if(target_coordinates[0] ** 2 + target_coordinates[1] ** 2 > this.world_size ** 2)
+                {
+                    this.rand_target();
+                }
+            }
+        });
+        this.key_triggered_button("Decrease Tile Size", ["Shift", " "], () => {
+            if(this.state_id !== 2 && this.scale > 1)
+                this.scale--;
+        });
+        this.key_triggered_button("Increase World", [","], () => {
+            if(this.state_id !== 2 && this.world_size < 750)
+                this.world_size+=50;
+        });
+        this.key_triggered_button("Decrease World", ["."], () => {
+            if(this.state_id !== 2 && this.world_size > 100)
+            {
+                this.world_size-=50;
+                let target_coordinates = vec3(2*this.scale * this.target[0], 2*this.scale * this.target[1] + this.scale);
+                if(target_coordinates[0] ** 2 + target_coordinates[1] ** 2 > this.world_size ** 2)
+                {
+                    this.rand_target();
+                }
+            }
+        });
+
+        this.new_line();
+        this.key_triggered_button("Increase Gravity", ["g"], () => {
+            if(this.state_id !== 2 && this.gravity < 30)
+                this.gravity++;
+        }, "black");
+        this.key_triggered_button("Decrease Gravity", ["h"], () => {
+            if(this.state_id !== 2 && this.gravity > 1)
+                this.gravity--;
+        }, "grey");
+        this.new_line();
+        this.key_triggered_button("Speed up", ["t"], () => {
+            if(this.time_scale < 50)
+                this.time_scale++;
+        }, "green");
+        this.key_triggered_button("Slow Down", ["y"], () => {
+            if(this.time_scale > 0)
+                this.time_scale--;
+        }, "red");
         this.new_line();
         this.key_triggered_button("Camera: Standard", ["0"], () => {
             this.camera_setting = 0;
@@ -241,29 +265,31 @@ export class Background extends Scene {
         this.key_triggered_button("Follow Ball", ["7"], () => {
             this.camera_movement = 2;
         });
-        this.new_line();
 
     }
 
 	// Attach HTML mouse events to the drawing canvas.
-    add_mouse_controls( canvas )
-    {
+    add_mouse_controls(canvas) {
         // First, measure mouse steering, for rotating the flyaround camera:
         this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined };
         const mouse_position = ( e, rect = canvas.getBoundingClientRect() ) =>
                                      vec( e.clientX - (rect.left + rect.right)/2, e.clientY - (rect.bottom + rect.top)/2 );
         // Set up mouse response. The last one stops us from reacting if the mouse leaves the canvas:
         document.addEventListener( "mouseup",   e => {
-            this.mouse.dx = this.mouse.from_center[0] - this.mouse.anchor[0];
-            this.mouse.dy = this.mouse.from_center[1] - this.mouse.anchor[1];
-            this.mouse.anchor = undefined;
-            this.mouse.from_center.scale_by(0);
-            this.t_released = 0;
-            this.mouse.released = true;
+            if(this.mouse.anchor !== undefined)
+            {
+                this.mouse.dx = this.mouse.from_center[0] - this.mouse.anchor[0];
+                this.mouse.dy = this.mouse.from_center[1] - this.mouse.anchor[1];
+                this.mouse.anchor = undefined;
+                this.mouse.from_center.scale_by(0);
+                this.t_released = 0;
+                this.mouse.released = true;
+                this.launchAudio.play();
+            }
         });
-        canvas  .addEventListener( "mousedown", e => { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; } );
-        canvas  .addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
-        canvas  .addEventListener( "mouseout",  e => { if( !this.mouse.anchor ) this.mouse.from_center.scale_by(0) } );
+        canvas.addEventListener( "mousedown", e => { if(this.state_id !== 2) { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; }} );
+        canvas.addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
+        canvas.addEventListener( "mouseout",  e => { if( !this.mouse.anchor ) this.mouse.from_center.scale_by(0) } );
     }
 
     display(context, program_state) {
@@ -291,6 +317,7 @@ export class Background extends Scene {
         let arrow_xz_angle = -Math.PI/4;
         let arrow_y_angle = Math.PI/4;
         let arrow_mag = 0; 		// Magnitude
+        let sh_arrow_mag = 0;
         let pixel_scale = 100; 	// Approximate width of foreground square in pixels
 
         // Mouse to arrow length scaling
@@ -331,13 +358,15 @@ export class Background extends Scene {
         ];
 
         // Calculate arrow vector
-        if (this.mouse.anchor) {
+        if (this.mouse.anchor) 
+        {
             this.state_id = 1;
             this.update_explanation();
             let mouse_x = (this.mouse.from_center[0] - this.mouse.anchor[0]) / pixel_scale;
             let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
             arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
             let temp_z = Math.cos(arrow_y_angle) * mouse_y;
+            sh_arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + temp_z * temp_z);
             if(temp_z == 0)
             {
                 if(mouse_x > 0)
@@ -353,8 +382,13 @@ export class Background extends Scene {
         let ball_transform = Mat4.translation(x, y, z);
         let shadow_transform = Mat4.translation(x, 0.1, z);
 
+        let ball_x = x;
+        let ball_y = y;
+        let ball_z = z;
+
         // Calculate ball velocity from mouse coords
-        if (this.mouse.released) {
+        if (this.mouse.released) 
+        {
             this.state_id = 2;
             this.update_explanation();
             let mouse_x = (this.mouse.dx) / pixel_scale;
@@ -364,32 +398,50 @@ export class Background extends Scene {
             dz = Math.cos(arrow_y_angle) * mouse_y;
             this.t_released += dt;
 
-            ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released);
-            shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
+            // Calculate the ball's new position
+            ball_x = x + k*dx*this.t_released;
+            ball_y = y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released;
+            ball_z = z + k*dz*this.t_released;
+
+            ball_transform = Mat4.translation(ball_x, ball_y , ball_z);
+            shadow_transform = Mat4.translation(ball_x, 0.1, ball_z);
         }
 
-        // Draw the ball
+        // Draw ball (if on the grid)
         this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
-        this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
+        if( ball_z >= 0 && ball_z <= this.nrows * scale * 2
+            && ball_x >= -this.ncols*scale && ball_x <= this.ncols*scale)
+        {
+            this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.75)}));
+        }
 
-        // Check if the ball landed
-        if ((y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) < (target_center[1] + 1)){
 
-            this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
-            this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
+        // Check if the ball landed (on the grid)
+        if ( ball_y < (target_center[1] + 1) // Assume ball's radius is 1
+            && ball_z >= 0 && ball_z <= this.nrows * scale * 2
+            && ball_x >= -this.ncols*scale && ball_x <= this.ncols*scale )
+        {
+
+            this.last_x = Math.round( ball_x / (2*scale));
+            this.last_z = Math.floor( ball_z / (2*scale));
 
             // Check if the ball hit target
-            if ((z + k*dz*this.t_released) < (target_center[2] + scale) &&
-                (z + k*dz*this.t_released) > (target_center[2] - scale) &&
-                (x + k*dx*this.t_released) < (target_center[0] + scale) &&
-                (x + k*dx*this.t_released) > (target_center[0] - scale))
+            if ((ball_z) < (target_center[2] + scale) &&
+                (ball_z) > (target_center[2] - scale) &&
+                (ball_x) < (target_center[0] + scale) &&
+                (ball_x) > (target_center[0] - scale))
             {
                 this.win_condition = true;
                 if(this.randomize)
                     this.rand_target();
+                this.winAudio.play();
+                this.hits++;
             }
-            else {
+            else 
+            {
                 this.win_condition = false;
+                this.failAudio.play();
+                this.misses++;
             }
 
             this.state_id = 3;
@@ -399,15 +451,17 @@ export class Background extends Scene {
             this.update_explanation();
         }
         // Collision with background
-        else if ((z + k*dz*this.t_released)**2 + (y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released)**2 + (x + k*dx*this.t_released)**2 >= (this.world_size-1)**2)
+        else if ((ball_z)**2 +(ball_y)**2 + (ball_x)**2 >= (this.world_size-1)**2)
         {
             this.win_condition = false;
-            this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
-            this.last_z = Math.floor( (z + k*dz*this.t_released) / (2*scale));
+            this.last_x = undefined; //Math.round( (ball_x) / (2*scale));
+            this.last_z = undefined; //Math.floor( (ball_z) / (2*scale));
             this.state_id = 3;
             this.t_released = 0;
             this.mouse.released = false;
             this.update_explanation();
+            this.failAudio.play();
+            this.misses++;
         }
 
         // Color where the ball last hit
@@ -445,13 +499,21 @@ export class Background extends Scene {
         arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
         arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,sign*arrow_mag/2));
 
-        if (this.state_id == 1)
+        let arrow_shadow_transformation = Mat4.identity();
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.translation(x, 0.01, z));
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.scale(1,0.05,sign*sh_arrow_mag/2));
+        if (this.state_id == 1) 
+        {
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
+            this.shapes.arrow.draw(context, program_state, arrow_shadow_transformation, this.materials.phong.override({color: color(0,0,0,0.75), specularity : 0.0, diffusivity: 0.0}));
+        }
 
         // Camera Setting and Movement
         // Watch the ball (if the ball is flying)
-        if(this.camera_movement === 1 && this.state_id === 2) {
-            program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 2.5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+        if(this.camera_movement === 1 && this.state_id === 2) 
+        {
+            program_state.set_camera(Mat4.look_at(vec3(ball_x, ball_y + 2.5, ball_z - 20), vec3(ball_x, ball_y , ball_z), vec3(0, 1, 0)));
         }
         // Follow the Ball (if the ball is flying)
         else if(this.camera_movement === 2 && this.state_id === 2)
@@ -459,9 +521,9 @@ export class Background extends Scene {
             const merge_time = 0.75
             let ct = this.t_released - merge_time;
             if(ct > 0)
-                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(ball_x, ball_y , ball_z), vec3(0, 1, 0)));
             else
-                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(ball_x, ball_y , ball_z), vec3(0, 1, 0)));
         }
         // Low view
         else if (this.camera_setting === 1)
@@ -497,14 +559,18 @@ export class Background extends Scene {
 
     // State if won/loss
     update_explanation() {
-        if (this.state_id == 0) {
+        if (this.state_id == 0) 
+        {
             this.explanation_element.innerHTML = `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
         }
-        else if (this.state_id == 3) {
-            if (this.win_condition) {
+        else if (this.state_id == 3) 
+        {
+            if (this.win_condition) 
+            {
                 this.explanation_element.innerHTML = `<p> Target hit! </p>`;
             }
-            else {
+            else 
+            {
                 this.explanation_element.innerHTML = `<p> Target missed. Try again </p>`;
             }
         }
