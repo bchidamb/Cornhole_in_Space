@@ -94,9 +94,6 @@ export class Background extends Scene {
         // Sound from https://www.freesoundslibrary.com/impact-sound-effect/
         // Sound from https://www.freesoundslibrary.com/sound-effect-toaster-pop-up/
         this.launchAudio = new Audio("./assets/Impact-sound-effect.mp3");
-
-        this.hits = 0;
-        this.misses = 0;
     }
     reset()
     {
@@ -111,6 +108,8 @@ export class Background extends Scene {
         this.camera_movement = 0;
         this.time_scale = 10;
         this.world_size = 250;
+        this.hits = 0;
+        this.misses = 0;
         this.win_condition = undefined;
         if(this.controls_setup)
             this.update_explanation();
