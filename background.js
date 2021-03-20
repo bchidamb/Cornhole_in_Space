@@ -404,7 +404,7 @@ export class Background extends Scene {
 
         // Draw ball
         this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
-        this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
+        this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.75)}));
 
         // Check if the ball landed
         if ((y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released) < (target_center[1] + 1)){
@@ -482,8 +482,15 @@ export class Background extends Scene {
         arrow_transformation = arrow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
         arrow_transformation = arrow_transformation.times(Mat4.scale(1,1,sign*arrow_mag/2));
 
+        let arrow_shadow_transformation = Mat4.identity();
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.translation(x, 0.01, z));
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.scale(1,0.05,sign*arrow_mag*Math.cos(arrow_y_angle)/2));
         if (this.state_id == 1)
+        {
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
+            this.shapes.arrow.draw(context, program_state, arrow_shadow_transformation, this.materials.phong.override({color: color(0,0,0,0.75), specularity : 0.0, diffusivity: 0.0}));
+        }
 
 
         // Camera Setting and Movement
