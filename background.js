@@ -297,13 +297,16 @@ export class Background extends Scene {
                                      vec( e.clientX - (rect.left + rect.right)/2, e.clientY - (rect.bottom + rect.top)/2 );
         // Set up mouse response. The last one stops us from reacting if the mouse leaves the canvas:
         document.addEventListener( "mouseup",   e => {
-            this.mouse.dx = this.mouse.from_center[0] - this.mouse.anchor[0];
-            this.mouse.dy = this.mouse.from_center[1] - this.mouse.anchor[1];
-            this.mouse.anchor = undefined;
-            this.mouse.from_center.scale_by(0);
-            this.t_released = 0;
-            this.mouse.released = true;
-            this.launchAudio.play();
+            if(this.mouse.anchor !== undefined)
+            {
+                this.mouse.dx = this.mouse.from_center[0] - this.mouse.anchor[0];
+                this.mouse.dy = this.mouse.from_center[1] - this.mouse.anchor[1];
+                this.mouse.anchor = undefined;
+                this.mouse.from_center.scale_by(0);
+                this.t_released = 0;
+                this.mouse.released = true;
+                this.launchAudio.play();
+            }
         });
         canvas  .addEventListener( "mousedown", e => { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; } );
         canvas  .addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
