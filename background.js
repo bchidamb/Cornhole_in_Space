@@ -15,17 +15,15 @@ class Grid extends Shape {
 }
 
 class Arrow extends Shape {
-    constructor()
-    {
+    constructor() {
         super("position", "normal", "texture_coord");
         defs.Closed_Cone     .insert_transformed_copy_into( this, [ 4, 10, [[ .67, 1  ], [ 0,1 ]] ], Mat4.translation(   0,   0,  2 ).times( Mat4.scale( .25, .25, .25 ) ) );
         defs.Cylindrical_Tube.insert_transformed_copy_into( this, [ 7, 7,  [[ .67, 1  ], [ 0,1 ]] ], Mat4.translation(   0,   0,  1 ).times( Mat4.scale(  .1,  .1,  2  ) ) );
     }
 }
 
-// Use this not Grid!!!
 // Makes two seperate grids and allows the user to treat them as a single object
-// (Note: This is not a real shape!!!)
+// (Note: This is not a real shape!)
 class FullGrid {
     // Produces the full n_rows x n_cols grid
     constructor(n_rows, n_cols, color1 = color(1,1,1,1), color2 = color(0,0,0,1)) {
@@ -40,8 +38,7 @@ class FullGrid {
     }
 
     // Draw function: Similar to the draw function for shapes except that it has two optional materials
-    draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2)
-    {
+    draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2) {
         this.grid.draw(context, program_state, model_transform, material1);
         this.grid.draw(context, program_state, model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(+2,0,2*(-this.rows + 1))), material2);
     }
@@ -63,22 +60,13 @@ export class Background extends Scene {
             full: new FullGrid(this.nrows, this.ncols, color(1,1,1,1), color(0,0,0,1)),
             arrow: new Arrow(),
             circle: new defs.Regular_2D_Polygon(25,25),
-            // axis: new defs.Axis_Arrows()
         }
 
         this.materials = {
             phong: new Material(new defs.Phong_Shader(),
-            {color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
-
-            // bump_phong: new Material(new Bump_Shader(),
-            // {color: color(1, 1, 1, 1),  ambient:0.5, diffusivity: 0.5, specularity: 1.0,}),
-
+                {color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
             texture: new Material(new defs.Textured_Phong(),
-            {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
-
-            // star_texture: new Material(new Star_Texture(),
-            // {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
-
+                {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
             ring: new Material(new Ring_Shader()),
         }
 
@@ -87,8 +75,9 @@ export class Background extends Scene {
         this.controls_setup = false;
         this.reset();
     }
-    reset()
-    {
+
+    // Reset game state to default state
+    reset() {
         this.randomize = true;
         this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
         this.t_released = 0;
@@ -104,8 +93,9 @@ export class Background extends Scene {
         if(this.controls_setup)
             this.update_explanation();
     }
-    rand_target()
-    {
+
+    // Generate a random target position
+    rand_target() {
         let visible = false;
         do {
             visible = true;
@@ -118,25 +108,18 @@ export class Background extends Scene {
             let z_max = Math.min(max_dist, this.nrows);
             let z_min = Math.abs(Math.ceil(this.target[0]*4.0/3.0));
 
-            //For a rough visibility make the z value be greater than |x| value
+            // For a rough visibility make the z value be greater than |x| value
             this.target[1] = z_min + Math.floor((z_max-z_min)*Math.random());
             let new_x = 2*this.scale * this.target[0];
             let new_z = 2*this.scale * this.target[1] + this.scale;
 
-            //check if beyond the stars
-            if(new_x**2 + new_z**2 >= this.world_size**2)
-            {
+            // Check if beyond the stars
+            if(new_x**2 + new_z**2 >= this.world_size**2) {
                 visible = false;
             }
-
-            // //rough visibility check
-            // if(Math.abs(new_x) <= Math.abs(new_z))
-            // {
-            //     visible = false;
-            // }
         } while (!visible);
-
     }
+
     make_control_panel() {
         this.key_triggered_button("Reset", ["r"], this.reset);
         this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
@@ -284,13 +267,6 @@ export class Background extends Scene {
     }
 
     display(context, program_state) {
-        // if (!context.scratchpad.controls) {
-        // 	// this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-        // 	// Define the global camera and projection matrices, which are stored in program_state.
-        // 	//perspective
-        // 	program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
-        // }
-
         if (!this.controls_setup) {
             this.add_mouse_controls(context.canvas);
             this.controls_setup = true;
@@ -337,13 +313,11 @@ export class Background extends Scene {
 
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000 * this.time_scale / 10;
 
-        let model_transform = Mat4.identity();
-
         // Note that each square is 2(scale) X 2(scale)
         let target_color = color(0,0,1,1);
 
-        let base_target_transformation = Mat4.translation(0,0.02,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
         // Move the target to the correct position
+        let base_target_transformation = Mat4.translation(0,0.02,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
         let target_transformation = Mat4.translation(2*scale * target_x, 0, 2*scale * target_z).times(base_target_transformation);
 
         // Get target coordinates in 3D
@@ -351,7 +325,8 @@ export class Background extends Scene {
 
         // Make light over the target
         const light_position = vec4(2*scale * target_x, 5, target_z*(2*scale) + scale, 1);
-        program_state.lights = [new Light(light_position, target_color, 10**10),
+        program_state.lights = [
+            new Light(light_position, target_color, 10**10),
             new Light(vec4(0,-1,0,0), color(0.2,0.2,0.2,0.2), 10**3)
         ];
 
@@ -390,10 +365,10 @@ export class Background extends Scene {
             this.t_released += dt;
 
             ball_transform = Mat4.translation(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released);
-                            shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
+            shadow_transform = Mat4.translation(x + k*dx*this.t_released, 0.1, z + k*dz*this.t_released);
         }
 
-        // Draw ball
+        // Draw the ball
         this.shapes.sphere.draw(context, program_state, ball_transform, this.materials.phong);
         this.shapes.circle.draw(context, program_state, shadow_transform.times(Mat4.rotation(Math.PI/2,1,0,0)), this.materials.phong.override({color: color(0,0,0,0.125)}));
 
@@ -415,7 +390,6 @@ export class Background extends Scene {
             }
             else {
                 this.win_condition = false;
-
             }
 
             this.state_id = 3;
@@ -425,7 +399,7 @@ export class Background extends Scene {
             this.update_explanation();
         }
         // Collision with background
-        else if ((z + k*dz*this.t_released)**2 +(y + k*dy*this.t_released -  1/2*gravity*this.t_released*this.t_released)**2 +  (x + k*dx*this.t_released)**2 >= (this.world_size-1)**2)
+        else if ((z + k*dz*this.t_released)**2 + (y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released)**2 + (x + k*dx*this.t_released)**2 >= (this.world_size-1)**2)
         {
             this.win_condition = false;
             this.last_x = Math.round( (x + k*dx*this.t_released) / (2*scale));
@@ -474,7 +448,6 @@ export class Background extends Scene {
         if (this.state_id == 1)
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
 
-
         // Camera Setting and Movement
         // Watch the ball (if the ball is flying)
         if(this.camera_movement === 1 && this.state_id === 2) {
@@ -486,16 +459,16 @@ export class Background extends Scene {
             const merge_time = 0.75
             let ct = this.t_released - merge_time;
             if(ct > 0)
-                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released), vec3(0, 1, 0)));
             else
-                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released), vec3(0, 1, 0)));
         }
-        // High view
+        // Low view
         else if (this.camera_setting === 1)
         {
             program_state.set_camera(Mat4.look_at(vec3(0, 15, -20), vec3(0, 0, 50), vec3(0, 1, 0)));
         }
-        // Low view
+        // High view
         else if (this.camera_setting === 2)
         {
             program_state.set_camera(Mat4.look_at(vec3(0, 50, -30), vec3(0, 0, 50), vec3(0, 1, 0)));
@@ -511,20 +484,19 @@ export class Background extends Scene {
             program_state.set_camera(Mat4.look_at(vec3(-10, 25, -15), vec3(-20, 3, 30), vec3(0, 1, 0)));
         }
         // Else place the camera in the default camera position (Standard view)
-        else{
+        else
+        {
             program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
         }
     }
 
-    show_explanation(document_element)
-    {
+    show_explanation(document_element) {
         this.explanation_element = document_element;
         this.explanation_element.innerHTML += `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
     }
 
     // State if won/loss
-    update_explanation()
-    {
+    update_explanation() {
         if (this.state_id == 0) {
             this.explanation_element.innerHTML = `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
         }
@@ -540,7 +512,6 @@ export class Background extends Scene {
 }
 
 class Ring_Shader extends Shader {
-
     update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
         // update_GPU():  Defining how to synchronize our JavaScript's variables to the GPU's:
         context.uniform1f(gpu_addresses.animation_time, graphics_state.animation_time / 1000);
@@ -586,61 +557,3 @@ class Ring_Shader extends Shader {
         }`;
     }
 }
-
-// //mostly copied from Phong Shader
-// class Bump_Shader extends defs.Phong_Shader {
-// 	update_GPU( context, gpu_addresses, gpu_state, model_transform, material )
-// 	{             // update_GPU(): Define how to synchronize our JavaScript's variables to the GPU's.  This is where the shader
-// 								// recieves ALL of its inputs.  Every value the GPU wants is divided into two categories:  Values that belong
-// 								// to individual objects being drawn (which we call "Material") and values belonging to the whole scene or
-// 								// program (which we call the "Program_State").  Send both a material and a program state to the shaders
-// 								// within this function, one data field at a time, to fully initialize the shader for a draw.
-
-// 								// Fill in any missing fields in the Material object with custom defaults for this shader:
-// 		const defaults = { color: color( 0,0,0,1 ), ambient: 0, diffusivity: 1, specularity: 1, smoothness: 40 };
-// 		context.uniform1f(gpu_addresses.animation_time, graphics_state.animation_time / 1000);
-// 		material = Object.assign( {}, defaults, material );
-
-// 		this.send_material ( context, gpu_addresses, material );
-// 		this.send_gpu_state( context, gpu_addresses, gpu_state, model_transform );
-// 	}
-
-// 	fragment_glsl_code()         // ********* FRAGMENT SHADER *********
-// 	{                          // A fragment is a pixel that's overlapped by the current triangle.
-// 														 // Fragments affect the final image or get discarded due to depth.
-// 		return this.shared_glsl_code() + `
-// 			void main()
-// 				{                                                           // Compute an initial (ambient) color:
-// 					vec3 bumped_N  = N - vec3(0,1,0);
-// 					gl_FragColor = vec4( shape_color.xyz * ambient, shape_color.w );
-// 																																	 // Compute the final color with contributions from lights:
-// 					gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
-// 				} ` ;
-// 	}
-
-// }
-// class Star_Texture extends defs.Textured_Phong {
-// 	fragment_glsl_code() {
-// 			return this.shared_glsl_code() + `
-// 					varying vec2 f_tex_coord;
-// 					uniform sampler2D texture;
-// 					uniform float animation_time;
-
-// 					void main(){
-
-// 							float mod_animation_time = 0.25*animation_time - float(int(0.25*animation_time)/16 * 16); //should get animation_time % 16
-
-// 							vec2 new_coord = vec2(f_tex_coord.x + 2.0*mod_animation_time, f_tex_coord.y);
-// 							// Sample the texture image in the correct place:
-// 							vec4 tex_color = texture2D( texture, new_coord);
-// 							if( tex_color.w < .01 ) discard;
-
-// 							float angle_time = mod_animation_time / 8.0 * 3.14159265359;
-// 							float new_ambient = ambient * (1.0-0.5*(sin(angle_time)*sin(angle_time)*sin(angle_time)*sin(angle_time)));
-// 							// Compute an initial (ambient) color:
-// 							gl_FragColor = vec4( ( tex_color.xyz ) * new_ambient, shape_color.w * tex_color.w );
-// 																																			 // Compute the final color with contributions from lights:
-// 							gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
-// 			} `;
-// 	}
-// }
