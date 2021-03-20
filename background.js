@@ -108,6 +108,8 @@ export class Background extends Scene {
         this.camera_movement = 0;
         this.time_scale = 10;
         this.world_size = 250;
+        this.hits = 0;
+        this.misses = 0;
         this.win_condition = undefined;
         if(this.controls_setup)
             this.update_explanation();
@@ -146,77 +148,18 @@ export class Background extends Scene {
 
     }
     make_control_panel() {
-        this.key_triggered_button("Reset", ["r"], this.reset);
-        this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
-        this.key_triggered_button("Randomization", ["q"], () => {
-            this.randomize = !this.randomize;
-        });
-        this.live_string( box => box.textContent = "Automatic Randomization: " + (this.randomize ? "On": "Off"));
+        this.live_string( box => box.textContent = "Total Hits: " + (this.hits) + ", Total Misses: "+(this.misses)
+            + ((this.misses + this.hits !== 0) ? ", Accuracy: " + (this.hits*100.0/(this.misses + this.hits)).toFixed(2) + "%": ""));
         this.new_line();
         this.live_string( box => box.textContent = "Target Coordinates: (" + (-this.target[0]) + ", " + (this.target[1]) + ")");
         this.new_line();
-        this.key_triggered_button("Target Left", ["a"], () => {
-            if(this.state_id !== 2 && this.target[0] < 40)
-                this.target[0]++;
-        });
-        this.key_triggered_button("Target Right", ["d"], () => {
-            if(this.state_id !== 2 && this.target[0] > -40)
-                this.target[0]--;
-        });
-        this.key_triggered_button("Target Forwards", ["w"], () => {
-            if(this.state_id !== 2 && this.target[1] < 50)
-                this.target[1]++;
-        });
-        this.key_triggered_button("Target Backwards", ["s"], () => {
-            if(this.state_id !== 2 && this.target[1] > 0)
-                this.target[1]--;
-        });
-        this.new_line();
-
-        this.live_string( box => box.textContent = "Tile width: " + this.scale);
-        this.new_line();
-        this.key_triggered_button("Increase Tile Size", [" "], () => {
-            if(this.state_id !== 2 && this.scale < 20)
-                this.scale++;
-        });
-        this.key_triggered_button("Decrease Tile Size", ["Shift", " "], () => {
-            if(this.state_id !== 2 && this.scale > 1)
-                this.scale--;
-        });
+        this.live_string( box => box.textContent = "Tile Size: " + this.scale);
         this.new_line();
         this.live_string( box => box.textContent = "World Size: " + (this.world_size));
         this.new_line();
-        this.key_triggered_button("Increase World", [","], () => {
-            if(this.state_id !== 2 && this.world_size < 750)
-                this.world_size+=50;
-        });
-        this.key_triggered_button("Decrease World", ["."], () => {
-            if(this.state_id !== 2 && this.world_size > 100)
-                this.world_size-=50;
-        });
-
-        this.new_line();
         this.live_string( box => box.textContent = "Gravity: " + this.gravity);
         this.new_line();
-        this.key_triggered_button("Increase Gravity", ["g"], () => {
-            if(this.state_id !== 2 && this.gravity < 30)
-                this.gravity++;
-        }, "black");
-        this.key_triggered_button("Decrease Gravity", ["h"], () => {
-            if(this.state_id !== 2 && this.gravity > 1)
-                this.gravity--;
-        }, "grey");
-        this.new_line();
         this.live_string( box => box.textContent = "Speed: " + (this.time_scale/10.).toFixed(2) + "x");
-        this.new_line();
-        this.key_triggered_button("Speed up", ["t"], () => {
-            if(this.time_scale < 50)
-                this.time_scale++;
-        }, "green");
-        this.key_triggered_button("Slow Down", ["y"], () => {
-            if(this.time_scale > 0)
-                this.time_scale--;
-        }, "red");
         this.new_line();
         this.live_string( box => {
             box.textContent = "Camera Mode: ";
@@ -241,6 +184,67 @@ export class Background extends Scene {
             else if (this.camera_setting === 4)
                 box.textContent += "Right";
         });
+        this.new_line();
+
+        this.key_triggered_button("Reset", ["r"], this.reset);
+        this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
+        this.key_triggered_button("Automatic Randomization", ["q"], () => {
+            this.randomize = !this.randomize;
+        });
+        this.live_string( box => box.textContent = (this.randomize ? "On": "Off"));
+        this.new_line();
+        this.key_triggered_button("Target Left", ["a"], () => {
+            if(this.state_id !== 2 && this.target[0] < 40)
+                this.target[0]++;
+        });
+        this.key_triggered_button("Target Right", ["d"], () => {
+            if(this.state_id !== 2 && this.target[0] > -40)
+                this.target[0]--;
+        });
+        this.key_triggered_button("Target Forwards", ["w"], () => {
+            if(this.state_id !== 2 && this.target[1] < 50)
+                this.target[1]++;
+        });
+        this.key_triggered_button("Target Backwards", ["s"], () => {
+            if(this.state_id !== 2 && this.target[1] > 0)
+                this.target[1]--;
+        });
+        this.new_line();
+        this.key_triggered_button("Increase Tile Size", [" "], () => {
+            if(this.state_id !== 2 && this.scale < 20)
+                this.scale++;
+        });
+        this.key_triggered_button("Decrease Tile Size", ["Shift", " "], () => {
+            if(this.state_id !== 2 && this.scale > 1)
+                this.scale--;
+        });
+        this.key_triggered_button("Increase World", [","], () => {
+            if(this.state_id !== 2 && this.world_size < 750)
+                this.world_size+=50;
+        });
+        this.key_triggered_button("Decrease World", ["."], () => {
+            if(this.state_id !== 2 && this.world_size > 100)
+                this.world_size-=50;
+        });
+
+        this.new_line();
+        this.key_triggered_button("Increase Gravity", ["g"], () => {
+            if(this.state_id !== 2 && this.gravity < 30)
+                this.gravity++;
+        }, "black");
+        this.key_triggered_button("Decrease Gravity", ["h"], () => {
+            if(this.state_id !== 2 && this.gravity > 1)
+                this.gravity--;
+        }, "grey");
+        this.new_line();
+        this.key_triggered_button("Speed up", ["t"], () => {
+            if(this.time_scale < 50)
+                this.time_scale++;
+        }, "green");
+        this.key_triggered_button("Slow Down", ["y"], () => {
+            if(this.time_scale > 0)
+                this.time_scale--;
+        }, "red");
         this.new_line();
         this.key_triggered_button("Camera: Standard", ["0"], () => {
             this.camera_setting = 0;
@@ -267,7 +271,6 @@ export class Background extends Scene {
         this.key_triggered_button("Follow Ball", ["7"], () => {
             this.camera_movement = 2;
         });
-        this.new_line();
 
     }
 
@@ -441,10 +444,12 @@ export class Background extends Scene {
                 if(this.randomize)
                     this.rand_target();
                 this.winAudio.play();
+                this.hits++;
             }
             else {
                 this.win_condition = false;
                 this.failAudio.play();
+                this.misses++;
             }
 
             this.state_id = 3;
@@ -464,6 +469,7 @@ export class Background extends Scene {
             this.mouse.released = false;
             this.update_explanation();
             this.failAudio.play();
+            this.misses++;
         }
 
         // Color where the ball last hit
