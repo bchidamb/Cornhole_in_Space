@@ -15,8 +15,7 @@ class Grid extends Shape {
 }
 
 class Arrow extends Shape {
-    constructor()
-    {
+    constructor() {
         super("position", "normal", "texture_coord");
         defs.Closed_Cone     .insert_transformed_copy_into( this, [ 4, 10, [[ .67, 1  ], [ 0,1 ]] ], Mat4.translation(   0,   0,  2 ).times( Mat4.scale( .25, .25, .25 ) ) );
         defs.Cylindrical_Tube.insert_transformed_copy_into( this, [ 7, 7,  [[ .67, 1  ], [ 0,1 ]] ], Mat4.translation(   0,   0,  1 ).times( Mat4.scale(  .1,  .1,  2  ) ) );
@@ -40,10 +39,95 @@ class FullGrid {
     }
 
     // Draw function: Similar to the draw function for shapes except that it has two optional materials
-    draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2)
-    {
+    draw(context, program_state, model_transform, material1 = this.materials.phong1, material2 = this.materials.phong2) {
         this.grid.draw(context, program_state, model_transform, material1);
         this.grid.draw(context, program_state, model_transform.times(Mat4.rotation(Math.PI,0,1,0)).times(Mat4.translation(+2,0,2*(-this.rows + 1))), material2);
+    }
+}
+
+// Used to make the text texture needed for the scoreboard
+export class Text_Line extends Shape                
+{                           // **Text_Line** embeds text in the 3D world, using a crude texture 
+                            // method.  This Shape is made of a horizontal arrangement of quads.
+                            // Each is textured over with images of ASCII characters, spelling 
+                            // out a string.  Usage:  Instantiate the Shape with the desired
+                            // character line width.  Then assign it a single-line string by calling
+                            // set_string("your string") on it. Draw the shape on a material
+                            // with full ambient weight, and text.png assigned as its texture 
+                            // file.  For multi-line strings, repeat this process and draw with
+                            // a different matrix.
+  constructor( max_size )
+    { super( "position", "normal", "texture_coord" );
+      this.max_size = max_size;
+      var object_transform = Mat4.identity();
+      for( var i = 0; i < max_size; i++ )
+      {                                       // Each quad is a separate Square instance:
+        defs.Square.insert_transformed_copy_into( this, [], object_transform );
+        object_transform.post_multiply( Mat4.translation( 1.5,0,0 ) );
+      }
+    }
+  set_string( line, context )
+    {           // set_string():  Call this to overwrite the texture coordinates buffer with new 
+                // values per quad, which enclose each of the string's characters.
+      this.arrays.texture_coord = [];
+      for( var i = 0; i < this.max_size; i++ )
+        {
+          var row = Math.floor( ( i < line.length ? line.charCodeAt( i ) : ' '.charCodeAt() ) / 16 ),
+              col = Math.floor( ( i < line.length ? line.charCodeAt( i ) : ' '.charCodeAt() ) % 16 );
+
+          var skip = 3, size = 32, sizefloor = size - skip;
+          var dim = size * 16,  
+              left  = (col * size + skip) / dim,      top    = (row * size + skip) / dim,
+              right = (col * size + sizefloor) / dim, bottom = (row * size + sizefloor + 5) / dim;
+
+          this.arrays.texture_coord.push( ...Vector.cast( [ left,  1-bottom], [ right, 1-bottom ],
+                                                          [ left,  1-top   ], [ right, 1-top    ] ) );
+        }
+      if( !this.existing )
+        { this.copy_onto_graphics_card( context );
+          this.existing = true;
+        }
+      else
+        this.copy_onto_graphics_card( context, ["texture_coord"], false );
+    }
+}
+
+class Scoreboard {
+    constructor() {
+        this.score = 0;
+
+        this.board = new defs.Square();
+        this.text = new Text_Line(35);
+
+        this.shader = new Material(new defs.Phong_Shader(), 
+            {ambient: 1, diffusivity: .3, specularity: .5, smoothness: 10, color: color(.191,.191,.191,1)});
+        this.text_image = new Material(new defs.Textured_Phong(1),
+            {ambient: 1, diffusivity: 0, specularity: 0, texture: new Texture("assets/text.png")});
+    }
+
+    // Increases the user's score
+    update() {
+        this.score += 1;
+    }
+
+    // Resets the user's score to 0
+    reset() {
+        this.score = 0;
+    }
+
+    // Draws the scoreboard
+    // Takes in the camera vectors in order to draw the scoreboard in the same spot, regardless of camera position
+    draw(context, program_state, cam_eye, cam_at, cam_up) {
+        let board_transform = Mat4.inverse(Mat4.look_at(cam_at, cam_eye, cam_up));
+        // board_transform = board_transform.times(Mat4.translation(35,21,0)).times(Mat4.scale(12,1.6,0));
+        
+        this.board.draw(context, program_state, board_transform, this.shader);
+        let score_string = "Total Score: " + this.score;
+        
+        let line_transform = Mat4.inverse(Mat4.look_at(cam_at, cam_eye, cam_up)).times(Mat4.scale(-1,1,1));
+        // line_transform = line_transform.times(Mat4.translation(38,20.5,-1)).times(Mat4.scale(-.7,.7,.7));
+        this.text.set_string(score_string, context.context);
+        // this.text.draw(context, program_state, line_transform, this.text_image);
     }
 }
 
@@ -68,27 +152,21 @@ export class Background extends Scene {
 
         this.materials = {
             phong: new Material(new defs.Phong_Shader(),
-            {color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
-
-            // bump_phong: new Material(new Bump_Shader(),
-            // {color: color(1, 1, 1, 1),  ambient:0.5, diffusivity: 0.5, specularity: 1.0,}),
-
+                {color: color(1, 1, 1, 1),  ambient:1, diffusivity: 0, specularity: 1.0,}),
             texture: new Material(new defs.Textured_Phong(),
-            {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
-
-            // star_texture: new Material(new Star_Texture(),
-            // {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
-
+                {color: color(0, 0, 0, 1),  ambient:1, texture: new Texture("./assets/stars.jpg")}),
             ring: new Material(new Ring_Shader()),
         }
+
+        this.scoreboard = new Scoreboard();
 
         // REMEMBER so that the sphere is moderately oriented
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(25));
         this.controls_setup = false;
         this.reset();
     }
-    reset()
-    {
+
+    reset() {
         this.randomize = true;
         this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined, "dx": 0, "dy": 0 };
         this.t_released = 0;
@@ -101,11 +179,12 @@ export class Background extends Scene {
         this.time_scale = 10;
         this.world_size = 250;
         this.win_condition = undefined;
+        this.scoreboard.reset();
         if(this.controls_setup)
             this.update_explanation();
     }
-    rand_target()
-    {
+
+    rand_target() {
         let visible = false;
         do {
             visible = true;
@@ -128,15 +207,9 @@ export class Background extends Scene {
             {
                 visible = false;
             }
-
-            // //rough visibility check
-            // if(Math.abs(new_x) <= Math.abs(new_z))
-            // {
-            //     visible = false;
-            // }
         } while (!visible);
-
     }
+
     make_control_panel() {
         this.key_triggered_button("Reset", ["r"], this.reset);
         this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
@@ -263,8 +336,7 @@ export class Background extends Scene {
     }
 
 	// Attach HTML mouse events to the drawing canvas.
-    add_mouse_controls( canvas )
-    {
+    add_mouse_controls(canvas) {
         // First, measure mouse steering, for rotating the flyaround camera:
         this.mouse = { "from_center": vec( 0,0 ), "released": false, "anchor": undefined };
         const mouse_position = ( e, rect = canvas.getBoundingClientRect() ) =>
@@ -284,13 +356,6 @@ export class Background extends Scene {
     }
 
     display(context, program_state) {
-        // if (!context.scratchpad.controls) {
-        // 	// this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-        // 	// Define the global camera and projection matrices, which are stored in program_state.
-        // 	//perspective
-        // 	program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
-        // }
-
         if (!this.controls_setup) {
             this.add_mouse_controls(context.canvas);
             this.controls_setup = true;
@@ -337,13 +402,11 @@ export class Background extends Scene {
 
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000 * this.time_scale / 10;
 
-        let model_transform = Mat4.identity();
-
         // Note that each square is 2(scale) X 2(scale)
         let target_color = color(0,0,1,1);
 
-        let base_target_transformation = Mat4.translation(0,0.02,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
         // Move the target to the correct position
+        let base_target_transformation = Mat4.translation(0,0.02,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
         let target_transformation = Mat4.translation(2*scale * target_x, 0, 2*scale * target_z).times(base_target_transformation);
 
         // Get target coordinates in 3D
@@ -415,7 +478,6 @@ export class Background extends Scene {
             }
             else {
                 this.win_condition = false;
-
             }
 
             this.state_id = 3;
@@ -443,6 +505,7 @@ export class Background extends Scene {
             if(this.win_condition === true)
             {
                 hit_color = color(0,0.67,0,1);
+                this.scoreboard.update();
             }
 
             let base_hit_transformation = Mat4.translation(0,0.01,scale).times(Mat4.scale(scale,1,scale).times(Mat4.rotation(Math.PI/2, 1,0,0)));
@@ -474,57 +537,67 @@ export class Background extends Scene {
         if (this.state_id == 1)
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
 
-
         // Camera Setting and Movement
         // Watch the ball (if the ball is flying)
+        let cam_eye = vec3(0,0,0), cam_at = vec3(0,0,0), cam_up = vec3(0,0,0);
         if(this.camera_movement === 1 && this.state_id === 2) {
-            program_state.set_camera(Mat4.look_at(vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 2.5, z + k*dz*this.t_released - 20), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+            cam_eye = vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released + 2.5, z + k*dz*this.t_released - 20);
+            cam_at  = vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released);
+            cam_up  = vec3(0, 1, 0);
         }
         // Follow the Ball (if the ball is flying)
         else if(this.camera_movement === 2 && this.state_id === 2)
         {
             const merge_time = 0.75
             let ct = this.t_released - merge_time;
-            if(ct > 0)
-                program_state.set_camera(Mat4.look_at(vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
-            else
-                program_state.set_camera(Mat4.look_at(vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released), vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released , z + k*dz*this.t_released), vec3(0, 1, 0)));
+            if(ct > 0) {
+                cam_eye = vec3(x + k*dx*ct+0.01, y + k*dy*ct - 1/2*gravity*ct**2+0.01, z + k*dz*ct+0.01);
+                cam_at  = vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released);
+                cam_up  = vec3(0, 1, 0);
+            }
+            else {
+                cam_eye = vec3(x/merge_time*this.t_released, y/merge_time*this.t_released, z/merge_time*this.t_released);
+                cam_at  = vec3(x + k*dx*this.t_released, y + k*dy*this.t_released - 1/2*gravity*this.t_released*this.t_released, z + k*dz*this.t_released);
+                cam_up  = vec3(0, 1, 0);
+            }
         }
-        // High view
+        // Low view
         else if (this.camera_setting === 1)
         {
-            program_state.set_camera(Mat4.look_at(vec3(0, 15, -20), vec3(0, 0, 50), vec3(0, 1, 0)));
+            cam_eye = vec3(0, 15, -20), cam_at = vec3(0, 0, 50), cam_up = vec3(0, 1, 0);
         }
         // Low view
         else if (this.camera_setting === 2)
         {
-            program_state.set_camera(Mat4.look_at(vec3(0, 50, -30), vec3(0, 0, 50), vec3(0, 1, 0)));
+            cam_eye = vec3(0, 50, -30), cam_at = vec3(0, 0, 50), cam_up = vec3(0, 1, 0);
         }
         // Left view
         else if (this.camera_setting === 3)
         {
-            program_state.set_camera(Mat4.look_at(vec3(+10, 25, -15), vec3(+20, 3, 30), vec3(0, 1, 0)));
+            cam_eye = vec3(+10, 25, -15), cam_at = vec3(+20, 3, 30), cam_up = vec3(0, 1, 0);
         }
         // Right view
         else if (this.camera_setting === 4)
         {
-            program_state.set_camera(Mat4.look_at(vec3(-10, 25, -15), vec3(-20, 3, 30), vec3(0, 1, 0)));
+            cam_eye = vec3(-10, 25, -15), cam_at = vec3(-20, 3, 30), cam_up = vec3(0, 1, 0);
         }
         // Else place the camera in the default camera position (Standard view)
-        else{
-            program_state.set_camera(Mat4.look_at(vec3(0, 25, -20), vec3(0, 3, 30), vec3(0, 1, 0)));
+        else 
+        {
+            cam_eye = vec3(0, 25, -20), cam_at = vec3(0, 3, 30), cam_up = vec3(0, 1, 0);
         }
+
+        program_state.set_camera(Mat4.look_at(cam_eye, cam_at, cam_up));
+        this.scoreboard.draw(context, program_state, cam_eye, cam_at, cam_up);
     }
 
-    show_explanation(document_element)
-    {
+    show_explanation(document_element) {
         this.explanation_element = document_element;
         this.explanation_element.innerHTML += `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
     }
 
     // State if won/loss
-    update_explanation()
-    {
+    update_explanation() {
         if (this.state_id == 0) {
             this.explanation_element.innerHTML = `<p> This is a space cornhole game. Click and drag the ball to launch it toward the target </p>`;
         }
@@ -586,61 +659,3 @@ class Ring_Shader extends Shader {
         }`;
     }
 }
-
-// //mostly copied from Phong Shader
-// class Bump_Shader extends defs.Phong_Shader {
-// 	update_GPU( context, gpu_addresses, gpu_state, model_transform, material )
-// 	{             // update_GPU(): Define how to synchronize our JavaScript's variables to the GPU's.  This is where the shader
-// 								// recieves ALL of its inputs.  Every value the GPU wants is divided into two categories:  Values that belong
-// 								// to individual objects being drawn (which we call "Material") and values belonging to the whole scene or
-// 								// program (which we call the "Program_State").  Send both a material and a program state to the shaders
-// 								// within this function, one data field at a time, to fully initialize the shader for a draw.
-
-// 								// Fill in any missing fields in the Material object with custom defaults for this shader:
-// 		const defaults = { color: color( 0,0,0,1 ), ambient: 0, diffusivity: 1, specularity: 1, smoothness: 40 };
-// 		context.uniform1f(gpu_addresses.animation_time, graphics_state.animation_time / 1000);
-// 		material = Object.assign( {}, defaults, material );
-
-// 		this.send_material ( context, gpu_addresses, material );
-// 		this.send_gpu_state( context, gpu_addresses, gpu_state, model_transform );
-// 	}
-
-// 	fragment_glsl_code()         // ********* FRAGMENT SHADER *********
-// 	{                          // A fragment is a pixel that's overlapped by the current triangle.
-// 														 // Fragments affect the final image or get discarded due to depth.
-// 		return this.shared_glsl_code() + `
-// 			void main()
-// 				{                                                           // Compute an initial (ambient) color:
-// 					vec3 bumped_N  = N - vec3(0,1,0);
-// 					gl_FragColor = vec4( shape_color.xyz * ambient, shape_color.w );
-// 																																	 // Compute the final color with contributions from lights:
-// 					gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
-// 				} ` ;
-// 	}
-
-// }
-// class Star_Texture extends defs.Textured_Phong {
-// 	fragment_glsl_code() {
-// 			return this.shared_glsl_code() + `
-// 					varying vec2 f_tex_coord;
-// 					uniform sampler2D texture;
-// 					uniform float animation_time;
-
-// 					void main(){
-
-// 							float mod_animation_time = 0.25*animation_time - float(int(0.25*animation_time)/16 * 16); //should get animation_time % 16
-
-// 							vec2 new_coord = vec2(f_tex_coord.x + 2.0*mod_animation_time, f_tex_coord.y);
-// 							// Sample the texture image in the correct place:
-// 							vec4 tex_color = texture2D( texture, new_coord);
-// 							if( tex_color.w < .01 ) discard;
-
-// 							float angle_time = mod_animation_time / 8.0 * 3.14159265359;
-// 							float new_ambient = ambient * (1.0-0.5*(sin(angle_time)*sin(angle_time)*sin(angle_time)*sin(angle_time)));
-// 							// Compute an initial (ambient) color:
-// 							gl_FragColor = vec4( ( tex_color.xyz ) * new_ambient, shape_color.w * tex_color.w );
-// 																																			 // Compute the final color with contributions from lights:
-// 							gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
-// 			} `;
-// 	}
-// }
