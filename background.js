@@ -308,7 +308,7 @@ export class Background extends Scene {
                 this.launchAudio.play();
             }
         });
-        canvas  .addEventListener( "mousedown", e => { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; } );
+        canvas  .addEventListener( "mousedown", e => { if(this.state_id !== 2) { e.preventDefault(); this.mouse.anchor = mouse_position(e);           this.mouse.released = false; }} );
         canvas  .addEventListener( "mousemove", e => { if( this.mouse.anchor ) { this.mouse.from_center = mouse_position(e); }} );
         canvas  .addEventListener( "mouseout",  e => { if( !this.mouse.anchor ) this.mouse.from_center.scale_by(0) } );
     }
