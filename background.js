@@ -325,6 +325,7 @@ export class Background extends Scene {
         let arrow_xz_angle = -Math.PI/4;
         let arrow_y_angle = Math.PI/4;
         let arrow_mag = 0; 		// Magnitude
+        let sh_arrow_mag = 0;
         let pixel_scale = 100; 	// Approximate width of foreground square in pixels
 
         // Mouse to arrow length scaling
@@ -373,6 +374,7 @@ export class Background extends Scene {
             let mouse_y = (this.mouse.from_center[1] - this.mouse.anchor[1]) / pixel_scale;
             arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + mouse_y * mouse_y);
             let temp_z = Math.cos(arrow_y_angle) * mouse_y;
+            sh_arrow_mag = arrow_scale * Math.sqrt(mouse_x * mouse_x + temp_z * temp_z);
             if(temp_z == 0)
             {
                 if(mouse_x > 0)
@@ -502,7 +504,7 @@ export class Background extends Scene {
         let arrow_shadow_transformation = Mat4.identity();
         arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.translation(x, 0.01, z));
         arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.rotation(arrow_xz_angle,0,1,0));
-        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.scale(1,0.05,sign*arrow_mag*Math.cos(arrow_y_angle)/2));
+        arrow_shadow_transformation = arrow_shadow_transformation.times(Mat4.scale(1,0.05,sign*sh_arrow_mag/2));
         if (this.state_id == 1)
         {
             this.shapes.arrow.draw(context, program_state, arrow_transformation, this.materials.phong.override({color: color(1.0,0.0,0.0,1)}));
