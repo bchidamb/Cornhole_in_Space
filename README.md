@@ -4,8 +4,8 @@
 <pre>
 1. Branda, Daniel          UID: 005108972
 2. Chidambaram, Bhairav    UID: 805526084
-2. Kaneshige, Thomas       UID: 305110285
-3. Prateeq, Kaustuv        UID: 305171127
+3. Kaneshige, Thomas       UID: 305110285
+4. Prateeq, Kaustuv        UID: 305171127
 </pre>
 
 ## Introduction and Overview
@@ -46,7 +46,7 @@ This game is implemented in a style similar to a finite-state machine. The state
 The graphics of this game are implemented using a few tricks. 
 1. The grid is actually two grids, with each grid comprising half of the full grid.
 2. The background is a sphere centered at the origin with a texture applied to it. The game takes place inside it.
-3. The target is a sqaure with a circle on top of it, and the circle has a ring shader to yield the movement effect.
+3. The target is a square with a circle on top of it, and the circle has a ring shader to yield the movement effect.
 
 </br>
 
