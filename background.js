@@ -212,7 +212,14 @@ export class Background extends Scene {
         this.new_line();
         this.key_triggered_button("Increase Tile Size", [" "], () => {
             if(this.state_id !== 2 && this.scale < 20)
+            {
                 this.scale++;
+                let target_coordinates = vec3(2*this.scale * this.target[0], 2*this.scale * this.target[1] + this.scale);
+                if(target_coordinates[0] ** 2 + target_coordinates[1] ** 2 > this.world_size ** 2)
+                {
+                    this.rand_target();
+                }
+            }
         });
         this.key_triggered_button("Decrease Tile Size", ["Shift", " "], () => {
             if(this.state_id !== 2 && this.scale > 1)
@@ -224,7 +231,14 @@ export class Background extends Scene {
         });
         this.key_triggered_button("Decrease World", ["."], () => {
             if(this.state_id !== 2 && this.world_size > 100)
+            {
                 this.world_size-=50;
+                let target_coordinates = vec3(2*this.scale * this.target[0], 2*this.scale * this.target[1] + this.scale);
+                if(target_coordinates[0] ** 2 + target_coordinates[1] ** 2 > this.world_size ** 2)
+                {
+                    this.rand_target();
+                }
+            }
         });
 
         this.new_line();
