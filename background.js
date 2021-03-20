@@ -94,6 +94,9 @@ export class Background extends Scene {
         // Sound from https://www.freesoundslibrary.com/impact-sound-effect/
         // Sound from https://www.freesoundslibrary.com/sound-effect-toaster-pop-up/
         this.launchAudio = new Audio("./assets/Impact-sound-effect.mp3");
+
+        this.hits = 0;
+        this.misses = 0;
     }
     reset()
     {
@@ -146,6 +149,9 @@ export class Background extends Scene {
 
     }
     make_control_panel() {
+        this.live_string( box => box.textContent = "Total Hits: " + (this.hits) + ", Total Misses: "+(this.misses)
+            + ((this.misses + this.hits !== 0) ? ", Accuracy: " + (this.hits*100.0/(this.misses + this.hits)).toFixed(2) + "%": ""));
+        this.new_line();
         this.key_triggered_button("Reset", ["r"], this.reset);
         this.key_triggered_button("Randomize Target", ["e"], this.rand_target);
         this.key_triggered_button("Randomization", ["q"], () => {
@@ -439,10 +445,12 @@ export class Background extends Scene {
                 if(this.randomize)
                     this.rand_target();
                 this.winAudio.play();
+                this.hits++;
             }
             else {
                 this.win_condition = false;
                 this.failAudio.play();
+                this.misses++;
             }
 
             this.state_id = 3;
@@ -462,6 +470,7 @@ export class Background extends Scene {
             this.mouse.released = false;
             this.update_explanation();
             this.failAudio.play();
+            this.misses++;
         }
 
         // Color where the ball last hit
